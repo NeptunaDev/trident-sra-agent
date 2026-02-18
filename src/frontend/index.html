@@ -1,123 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* ws://localhost:*" />
   <title>Trident Agent</title>
-  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
-  <div id="tooltip-root" class="tooltip-root" aria-hidden="true"></div>
-  <div class="app">
-    <header>
-      <h1>Trident Agent</h1>
-      <p class="subtitle">Elige un protocolo</p>
-    </header>
-    <main class="home">
-      <div id="display"></div>
-      <div id="home-panel" class="home-panel">
-        <div class="home-buttons">
-          <div class="protocol-buttons">
-            <button type="button" class="home-btn" id="btn-vnc" data-connection="ubuntu-vnc">VNC</button>
-            <button type="button" class="home-btn" id="btn-ssh" data-connection="ubuntu-ssh">SSH</button>
-            <button type="button" class="home-btn" id="btn-rdp" data-connection="windows-rdp">RDP</button>
-          </div>
-          <button type="button" class="home-btn home-btn-danger" id="btn-disconnect">Desconectar</button>
-        </div>
-        <section class="sessions-section card">
-          <div class="sessions-section-header">
-            <h2>Sesiones</h2>
-            <button type="button" class="home-btn home-btn-danger" id="btn-delete-all" title="Borrar todas las sesiones y archivos">Borrar todo</button>
-          </div>
-          <div class="table-wrap">
-            <table class="sessions-table" id="sessions-table">
-              <thead>
-                <tr>
-                  <th>Conexión</th>
-                  <th>Session ID</th>
-                  <th>Fecha creación</th>
-                  <th>Video</th>
-                  <th>Typescript</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="sessions-tbody">
-              </tbody>
-            </table>
-          </div>
-          <div id="sessions-pagination" class="pagination-bar hidden">
-            <button type="button" class="home-btn btn-pagination" id="btn-prev-page" aria-label="Página anterior">← Anterior</button>
-            <span id="pagination-info" class="pagination-info">Página 1 de 1</span>
-            <button type="button" class="home-btn btn-pagination" id="btn-next-page" aria-label="Página siguiente">Siguiente →</button>
-          </div>
-          <p class="sessions-empty" id="sessions-empty">No hay sesiones.</p>
-        </section>
-      </div>
-    </main>
-  </div>
-
-  <!-- Modal Reproductor de Sesión (.guac) -->
-  <div id="modal-video" class="modal hidden">
-    <div class="modal-backdrop" data-action="close"></div>
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Reproductor de sesión</h2>
-        <button type="button" class="modal-close" id="btn-close-video" aria-label="Cerrar">×</button>
-      </div>
-      <div id="video-display" class="video-display"></div>
-      <div class="modal-toolbar">
-        <button type="button" class="home-btn" id="btn-play-video">▶ Reproducir</button>
-        <button type="button" class="home-btn" id="btn-pause-video">⏸ Pausar</button>
-        <button type="button" class="home-btn" id="btn-seek-video">⏮ Reiniciar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Borrar todo -->
-  <div id="modal-delete-all" class="modal hidden">
-    <div class="modal-backdrop" data-action="close-delete-all"></div>
-    <div class="modal-content modal-content-narrow">
-      <div class="modal-header">
-        <h2>Borrar todo</h2>
-        <button type="button" class="modal-close" id="btn-close-delete-all" aria-label="Cerrar">×</button>
-      </div>
-      <div class="modal-body">
-        <p class="modal-warning-text">Esta acción es <strong>irreversible</strong>. Se eliminarán todas las sesiones del listado y todos los archivos de grabación y typescript.</p>
-        <p class="modal-confirm-hint">Para continuar, escriba <strong id="confirm-phrase-display"></strong> en el recuadro:</p>
-        <input type="text" id="input-confirm-delete" class="input-confirm-delete" placeholder="escriba la frase o código mostrado" autocomplete="off" />
-      </div>
-      <div class="modal-toolbar">
-        <button type="button" class="home-btn" id="btn-cancel-delete-all">Cancelar</button>
-        <button type="button" class="home-btn home-btn-danger" id="btn-confirm-delete-all" disabled>Confirmar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Borrar sesión (una fila) -->
-  <div id="modal-delete-session" class="modal hidden">
-    <div class="modal-backdrop" data-action="close-delete-session"></div>
-    <div class="modal-content modal-content-narrow">
-      <div class="modal-header">
-        <h2>Borrar sesión</h2>
-        <button type="button" class="modal-close" id="btn-close-delete-session" aria-label="Cerrar">×</button>
-      </div>
-      <div class="modal-body">
-        <p class="modal-warning-text">Esta acción es <strong>irreversible</strong>. Se eliminarán los archivos de esta sesión (video y/o typescript) y se quitará del listado.</p>
-        <p class="modal-confirm-hint">Para continuar, escriba el <strong>UUID</strong> de la sesión en el recuadro:</p>
-        <p class="modal-uuid-display" id="delete-session-uuid-display"></p>
-        <input type="text" id="input-confirm-delete-session" class="input-confirm-delete" placeholder="pegue o escriba el UUID" autocomplete="off" />
-      </div>
-      <div class="modal-toolbar">
-        <button type="button" class="home-btn" id="btn-cancel-delete-session">Cancelar</button>
-        <button type="button" class="home-btn home-btn-danger" id="btn-confirm-delete-session" disabled>Confirmar</button>
-      </div>
-    </div>
-  </div>
-
-  <script type="module" src="app.js"></script>
+  <div id="root"></div>
+  <script type="module" src="/main.jsx"></script>
 </body>
-
 </html>

@@ -1,0 +1,59 @@
+{
+  "app": {
+    "title": "Trident Agent",
+    "subtitle": "Choose a protocol"
+  },
+  "protocols": {
+    "vnc": "VNC",
+    "ssh": "SSH",
+    "rdp": "RDP",
+    "disconnect": "Disconnect"
+  },
+  "sessions": {
+    "loading": "Loading…",
+    "title": "Sessions",
+    "deleteAll": "Delete all",
+    "empty": "No sessions.",
+    "connection": "Connection",
+    "sessionId": "Session ID",
+    "createdAt": "Created",
+    "video": "Video",
+    "typescript": "Typescript",
+    "actions": "Actions",
+    "viewVideo": "View video",
+    "viewText": "View text",
+    "delete": "Delete",
+    "page": "Page {{current}} of {{total}}",
+    "prev": "Previous",
+    "next": "Next"
+  },
+  "modal": {
+    "videoTitle": "Session player",
+    "play": "Play",
+    "pause": "Pause",
+    "restart": "Restart",
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "deleteAllTitle": "Delete all",
+    "deleteAllWarning": "This action is <strong>irreversible</strong>. All sessions will be removed from the list and all recording and typescript files will be deleted.",
+    "deleteAllHint": "To continue, type <strong>{{phrase}}</strong> in the box:",
+    "deleteAllPlaceholder": "type the phrase or code above",
+    "deleteSessionTitle": "Delete session",
+    "deleteSessionWarning": "This action is <strong>irreversible</strong>. This session's files (video and/or typescript) will be deleted and it will be removed from the list.",
+    "deleteSessionHint": "To continue, type the session <strong>UUID</strong> in the box:",
+    "deleteSessionPlaceholder": "paste or type the UUID"
+  },
+  "toast": {
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "deleteSessionSuccess": "Session deleted",
+    "deleteSessionError": "Could not delete session",
+    "deleteAllSuccess": "All sessions and files deleted",
+    "deleteAllError": "Could not complete the action",
+    "loadSessionsError": "Could not load sessions",
+    "connectError": "Could not connect",
+    "logLoadError": "Could not load log",
+    "videoLoadError": "Could not load recording"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "app": {
+    "title": "Trident Agent",
+    "subtitle": "Elige un protocolo"
+  },
+  "protocols": {
+    "vnc": "VNC",
+    "ssh": "SSH",
+    "rdp": "RDP",
+    "disconnect": "Desconectar"
+  },
+  "sessions": {
+    "loading": "Cargando…",
+    "title": "Sesiones",
+    "deleteAll": "Borrar todo",
+    "empty": "No hay sesiones.",
+    "connection": "Conexión",
+    "sessionId": "Session ID",
+    "createdAt": "Fecha creación",
+    "video": "Video",
+    "typescript": "Typescript",
+    "actions": "Acciones",
+    "viewVideo": "Ver video",
+    "viewText": "Ver texto",
+    "delete": "Borrar",
+    "page": "Página {{current}} de {{total}}",
+    "prev": "Anterior",
+    "next": "Siguiente"
+  },
+  "modal": {
+    "videoTitle": "Reproductor de sesión",
+    "play": "Reproducir",
+    "pause": "Pausar",
+    "restart": "Reiniciar",
+    "close": "Cerrar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "deleteAllTitle": "Borrar todo",
+    "deleteAllWarning": "Esta acción es <strong>irreversible</strong>. Se eliminarán todas las sesiones del listado y todos los archivos de grabación y typescript.",
+    "deleteAllHint": "Para continuar, escriba <strong>{{phrase}}</strong> en el recuadro:",
+    "deleteAllPlaceholder": "escriba la frase o código mostrado",
+    "deleteSessionTitle": "Borrar sesión",
+    "deleteSessionWarning": "Esta acción es <strong>irreversible</strong>. Se eliminarán los archivos de esta sesión (video y/o typescript) y se quitará del listado.",
+    "deleteSessionHint": "Para continuar, escriba el <strong>UUID</strong> de la sesión en el recuadro:",
+    "deleteSessionPlaceholder": "pegue o escriba el UUID"
+  },
+  "toast": {
+    "connected": "Conectado",
+    "disconnected": "Desconectado",
+    "deleteSessionSuccess": "Sesión eliminada",
+    "deleteSessionError": "No se pudo eliminar la sesión",
+    "deleteAllSuccess": "Sesiones y archivos eliminados",
+    "deleteAllError": "No se pudo completar la acción",
+    "loadSessionsError": "Error al cargar sesiones",
+    "connectError": "No se pudo conectar",
+    "logLoadError": "No se pudo cargar el log",
+    "videoLoadError": "No se pudo cargar la grabación"
+  }
+}

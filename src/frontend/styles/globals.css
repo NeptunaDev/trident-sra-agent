@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@theme inline {
+  --color-neptuna-ocean: #5bc2e7;
+  --color-deep-ocean: #4ba8d1;
+  --color-deep-space: #11111f;
+  --color-trident-steel: #c0c5ce;
+  --color-terminal-green: #00ff88;
+  --color-warning-coral: #ff6b6b;
+  --color-session-purple: #9b59b6;
+  --color-dark-bg: #0a0a0f;
+  --color-card-bg: #1a1a2e;
+  --color-muted-text: #6b7280;
+  --border-neptuna: rgba(91, 194, 231, 0.2);
+  --border-neptuna-subtle: rgba(91, 194, 231, 0.08);
+}
+
+html {
+  @apply antialiased;
+}
+
+body {
+  @apply bg-[#0a0a0f] text-white min-h-screen;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+#root {
+  @apply min-h-screen;
+}
+
+/* Sonner toasts — alineados con guía TRIDENT */
+[data-sonner-toaster] {
+  --normal-bg: #1a1a2e;
+  --normal-border: rgba(91, 194, 231, 0.2);
+  --normal-text: #ffffff;
+  --success-bg: #1a1a2e;
+  --success-border: #00ff88;
+  --success-text: #ffffff;
+  --error-bg: #1a1a2e;
+  --error-border: #ff6b6b;
+  --error-text: #ffffff;
+  --warning-bg: #1a1a2e;
+  --warning-border: #ffc107;
+  --warning-text: #ffffff;
+}

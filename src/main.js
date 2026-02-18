@@ -10,6 +10,7 @@
 
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { startApi, PORT } = require('./api');
 
 /** Ventana principal de la aplicación. Null cuando está cerrada. */
@@ -17,6 +18,10 @@ let mainWindow;
 
 /** Instancia del servidor HTTP de la API (Express). Se cierra al cerrar todas las ventanas. */
 let apiServer;
+
+/** Ruta al frontend construido (Vite). Si no existe, se usa src/frontend (requiere build previo). */
+const distFrontend = path.join(__dirname, '..', 'dist', 'frontend', 'index.html');
+const srcFrontend = path.join(__dirname, 'frontend', 'index.html');
 
 /**
  * Crea la ventana principal, inicia la API y carga la interfaz del frontend.
@@ -37,7 +42,16 @@ async function createWindow() {
     apiServer = server;
   });
 
-  mainWindow.loadFile(path.join(__dirname, 'frontend', 'index.html'));
+  const isDev = process.env.ELECTRON_DEV === '1';
+  if (isDev) {
+    mainWindow.loadURL('http://localhost:5173');
+  } else {
+    const indexPath = fs.existsSync(distFrontend) ? distFrontend : srcFrontend;
+    if (!fs.existsSync(indexPath)) {
+      console.error('Frontend not found. Run: npm run build:frontend');
+    }
+    mainWindow.loadFile(indexPath);
+  }
   mainWindow.webContents.openDevTools();
 
   mainWindow.on('closed', () => {
