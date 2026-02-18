@@ -10,7 +10,7 @@
 
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
-const { startApi, PORT } = require('./api/server');
+const { startApi, PORT } = require('./api');
 
 /** Ventana principal de la aplicación. Null cuando está cerrada. */
 let mainWindow;
