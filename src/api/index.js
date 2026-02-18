@@ -4,12 +4,13 @@
  * Carga la app Express, inicializa guacamole-lite (WebSocket) y exporta startApi, app y PORT
  * para que el proceso principal (main.js) arranque el servidor HTTP.
  *
- * Endpoints:
- * - GET /token?connection=...
- * - GET /sessions
- * - GET /view-log?sessionId=...
- * - GET /view-video?sessionId=...
- * - POST /clean-recordings
+ * Endpoints (prefijo /api/v1):
+ * - GET  /api/v1/guacamole/token?connection=...
+ * - GET  /api/v1/sessions?page=&limit=
+ * - GET  /api/v1/view/log?sessionId=...
+ * - GET  /api/v1/view/video?sessionId=...
+ * - POST   /api/v1/sessions/clean-recordings
+ * - DELETE /api/v1/sessions/:sessionId
  */
 
 const app = require('./app');

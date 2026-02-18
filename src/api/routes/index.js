@@ -1,22 +1,21 @@
 /**
- * Agregador de rutas de la API.
+ * Agregador de rutas de la API (prefijo /api/v1).
  *
- * Monta todos los routers bajo las rutas indicadas.
+ * Estructura: /api/v1/{carpeta}/{endpoint}
+ * - sessions: listado (GET) y limpieza (POST clean-recordings).
+ * - guacamole: token de conexión (GET token).
+ * - view: log (GET log) y video (GET video) de sesión.
  */
 
 const express = require('express');
-const tokenRoutes = require('./token.routes');
-const sessionsRoutes = require('./sessions.routes');
-const viewLogRoutes = require('./viewLog.routes');
-const viewVideoRoutes = require('./viewVideo.routes');
-const cleanRecordingsRoutes = require('./cleanRecordings.routes');
+const sessionsRoutes = require('./sessions/index');
+const guacamoleRoutes = require('./guacamole/index');
+const viewRoutes = require('./view/index');
 
 const router = express.Router();
 
-router.use('/token', tokenRoutes);
-router.use('/sessions', sessionsRoutes);
-router.use('/view-log', viewLogRoutes);
-router.use('/view-video', viewVideoRoutes);
-router.use('/clean-recordings', cleanRecordingsRoutes);
+router.use('/api/v1/sessions', sessionsRoutes);
+router.use('/api/v1/guacamole', guacamoleRoutes);
+router.use('/api/v1/view', viewRoutes);
 
 module.exports = router;

@@ -1,8 +1,8 @@
 /**
  * Servicio de lectura y escritura del CSV de sesiones (data/data.csv).
  *
- * Formato: connectionName,sessionId,videoPath,typescriptPath
- * Proporciona funciones para añadir filas, leer todas las sesiones y buscar por sessionId.
+ * Formato: connectionName,sessionId,videoPath,typescriptPath,createdAt
+ * createdAt = ISO 8601 con milisegundos (ej. 2026-02-17T21:30:45.123Z).
  */
 
 const fs = require('fs');
@@ -12,10 +12,10 @@ const path = require('path');
 const DATA_CSV_PATH = path.join(__dirname, '..', '..', '..', 'data', 'data.csv');
 
 /** Primera línea del CSV: nombres de columnas. */
-const CSV_HEADER = 'connectionName,sessionId,videoPath,typescriptPath\n';
+const CSV_HEADER = 'connectionName,sessionId,videoPath,typescriptPath,createdAt\n';
 
 /** Cabecera fija para que el JSON de sesiones siempre tenga las mismas claves. */
-const CSV_COLUMNS = ['connectionName', 'sessionId', 'videoPath', 'typescriptPath'];
+const CSV_COLUMNS = ['connectionName', 'sessionId', 'videoPath', 'typescriptPath', 'createdAt'];
 
 /**
  * Escapa un valor para CSV (comillas si contiene coma, comilla o salto de línea).
@@ -68,14 +68,16 @@ function appendSessionToCsv(connectionName, sessionId, videoPath, typescriptPath
   if (!fs.existsSync(DATA_CSV_PATH)) fs.writeFileSync(DATA_CSV_PATH, CSV_HEADER);
   const video = videoPath != null ? String(videoPath) : '';
   const typescript = typescriptPath != null ? String(typescriptPath) : '';
-  const row = [connectionName, sessionId, video, typescript].map(escapeCsvField).join(',') + '\n';
+  const createdAt = new Date().toISOString();
+  const row = [connectionName, sessionId, video, typescript, createdAt].map(escapeCsvField).join(',') + '\n';
   fs.appendFileSync(DATA_CSV_PATH, row);
 }
 
 /**
  * Lee el CSV de sesiones y devuelve un array de objetos normalizados.
  * Si la primera línea no es cabecera (connectionName, sessionId), se trata como datos (fallback).
- * @returns {Array<{ connectionName: string, sessionId: string, videoPath: string, typescriptPath: string }>}
+ * Filas antiguas sin createdAt quedan con createdAt ''.
+ * @returns {Array<{ connectionName: string, sessionId: string, videoPath: string, typescriptPath: string, createdAt: string }>}
  */
 function readSessionsFromCsv() {
   if (!fs.existsSync(DATA_CSV_PATH)) return [];
@@ -102,16 +104,52 @@ function readSessionsFromCsv() {
 /**
  * Busca una sesión por sessionId en el CSV.
  * @param {string} sessionId - Identificador de la sesión.
- * @returns {{ connectionName: string, sessionId: string, videoPath: string, typescriptPath: string } | undefined}
+ * @returns {{ connectionName: string, sessionId: string, videoPath: string, typescriptPath: string, createdAt: string } | undefined}
  */
 function findSessionBySessionId(sessionId) {
   const sessions = readSessionsFromCsv();
   return sessions.find((s) => (s.sessionId || '').trim() === String(sessionId).trim());
 }
 
+/**
+ * Vacía el CSV de sesiones: deja solo la cabecera (todas las filas eliminadas).
+ */
+function truncateSessionsCsv() {
+  const csvDir = path.dirname(DATA_CSV_PATH);
+  if (!fs.existsSync(csvDir)) fs.mkdirSync(csvDir, { recursive: true });
+  fs.writeFileSync(DATA_CSV_PATH, CSV_HEADER);
+}
+
+/**
+ * Elimina del CSV la fila de la sesión con el sessionId indicado.
+ * Reescribe el archivo con el resto de filas.
+ * @param {string} sessionId - Identificador de la sesión a quitar.
+ * @returns {boolean} True si se encontró y eliminó la fila.
+ */
+function removeSessionBySessionId(sessionId) {
+  const sessions = readSessionsFromCsv();
+  const id = String(sessionId).trim();
+  const filtered = sessions.filter((s) => (s.sessionId || '').trim() !== id);
+  if (filtered.length === sessions.length) return false;
+  const csvDir = path.dirname(DATA_CSV_PATH);
+  if (!fs.existsSync(csvDir)) fs.mkdirSync(csvDir, { recursive: true });
+  const lines = [CSV_HEADER.trim()];
+  filtered.forEach((row) => {
+    const video = (row.videoPath != null ? String(row.videoPath) : '').trim();
+    const typescript = (row.typescriptPath != null ? String(row.typescriptPath) : '').trim();
+    const createdAt = (row.createdAt != null ? String(row.createdAt) : '').trim();
+    const rowLine = [row.connectionName, row.sessionId, video, typescript, createdAt].map(escapeCsvField).join(',');
+    lines.push(rowLine);
+  });
+  fs.writeFileSync(DATA_CSV_PATH, lines.join('\n') + '\n');
+  return true;
+}
+
 module.exports = {
   appendSessionToCsv,
   readSessionsFromCsv,
   findSessionBySessionId,
+  truncateSessionsCsv,
+  removeSessionBySessionId,
   CSV_COLUMNS,
 };

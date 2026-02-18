@@ -21,6 +21,44 @@ function resolveFilePath(filePathCandidates) {
 }
 
 /**
+ * Borra un archivo si existe.
+ * @param {string} filePath - Ruta del archivo.
+ * @returns {boolean} True si se eliminó, false si no existía o no se pudo.
+ */
+function deleteFile(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return false;
+  try {
+    fs.unlinkSync(path.resolve(filePath));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Borra los archivos de una sesión: .guac si hay videoPath; .typescript y .typescript.timing si hay typescriptPath.
+ * @param {{ videoPath?: string, typescriptPath?: string }} session - Sesión con rutas opcionales.
+ * @returns {{ deletedVideo: boolean, deletedTypescript: boolean, deletedTiming: boolean }}
+ */
+function deleteSessionFiles(session) {
+  let deletedVideo = false;
+  let deletedTypescript = false;
+  let deletedTiming = false;
+  const videoPath = (session.videoPath || '').trim();
+  const typescriptPath = (session.typescriptPath || '').trim();
+  if (videoPath && fs.existsSync(path.resolve(videoPath))) {
+    deletedVideo = deleteFile(videoPath);
+  }
+  if (typescriptPath) {
+    const resolved = path.resolve(typescriptPath);
+    if (fs.existsSync(resolved)) deletedTypescript = deleteFile(resolved);
+    const timingPath = resolved + '.timing';
+    if (fs.existsSync(timingPath)) deletedTiming = deleteFile(timingPath);
+  }
+  return { deletedVideo, deletedTypescript, deletedTiming };
+}
+
+/**
  * Borra todos los archivos dentro de una carpeta (solo primer nivel; no borra subdirectorios).
  * @param {string} dirPath - Ruta del directorio.
  * @returns {number} Número de archivos eliminados.
@@ -42,4 +80,6 @@ function clearDirectory(dirPath) {
 module.exports = {
   resolveFilePath,
   clearDirectory,
+  deleteFile,
+  deleteSessionFiles,
 };
