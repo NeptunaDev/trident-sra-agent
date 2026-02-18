@@ -1,3 +1,16 @@
+/**
+ * Servidor API Express para Trident Agent.
+ *
+ * Endpoints:
+ * - GET /token?connection=... — genera token cifrado para guacamole-lite y registra la sesión en data/data.csv.
+ * - GET /sessions — lista de sesiones desde el CSV (connectionName, sessionId, videoPath, typescriptPath).
+ * - GET /view-log?sessionId=... — sirve el archivo typescript de la sesión (texto plano).
+ * - GET /view-video?sessionId=... — sirve el archivo .guac de la sesión.
+ * - POST /clean-recordings — vacía data/recordings y data/typescript.
+ *
+ * Integra guacamole-lite (WebSocket + guacd) para que el frontend obtenga el token y abra la conexión.
+ */
+
 const crypto = require('crypto');
 const express = require('express');
 const fs = require('fs');
@@ -5,13 +18,22 @@ const GuacamoleLite = require('guacamole-lite');
 const path = require('path');
 const config = require('./config');
 
-/** data/data.csv (resuelto desde src/api/ → dos niveles arriba = raíz del proyecto). */
+/** Ruta al archivo CSV de sesiones (data/data.csv). Resuelta desde src/api/ → dos niveles arriba = raíz del proyecto. */
 const DATA_CSV_PATH = path.join(__dirname, '..', '..', 'data', 'data.csv');
+
+/** Primera línea del CSV: nombres de columnas. */
 const CSV_HEADER = 'connectionName,sessionId,videoPath,typescriptPath\n';
 
+/**
+ * Añade una fila al CSV de sesiones. Crea el directorio y el archivo con cabecera si no existen.
+ * @param {string} connectionName - Nombre de la conexión (ej. 'ubuntu-vnc').
+ * @param {string} sessionId - Identificador único de la sesión (UUID).
+ * @param {string|null} videoPath - Ruta del archivo .guac o null si no aplica.
+ * @param {string|null} typescriptPath - Ruta del archivo .typescript o null si no aplica.
+ */
 function appendSessionToCsv(connectionName, sessionId, videoPath, typescriptPath) {
-  const dir = path.dirname(DATA_CSV_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  const csvDir = path.dirname(DATA_CSV_PATH);
+  if (!fs.existsSync(csvDir)) fs.mkdirSync(csvDir, { recursive: true });
   if (!fs.existsSync(DATA_CSV_PATH)) fs.writeFileSync(DATA_CSV_PATH, CSV_HEADER);
   const video = videoPath != null ? String(videoPath) : '';
   const typescript = typescriptPath != null ? String(typescriptPath) : '';
@@ -19,51 +41,64 @@ function appendSessionToCsv(connectionName, sessionId, videoPath, typescriptPath
   fs.appendFileSync(DATA_CSV_PATH, row);
 }
 
+/**
+ * Escapa un valor para CSV (comillas si contiene coma, comilla o salto de línea).
+ * @param {string} value - Valor del campo.
+ * @returns {string}
+ */
 function escapeCsvField(value) {
   const s = String(value);
   if (s.includes(',') || s.includes('"') || s.includes('\n')) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
 
-/** Parsea una línea CSV respetando comillas (campos entre comillas pueden contener comas). */
+/**
+ * Parsea una línea CSV respetando comillas (campos entre comillas pueden contener comas).
+ * @param {string} line - Línea de texto CSV.
+ * @returns {string[]} Array de campos.
+ */
 function parseCsvLine(line) {
-  const out = [];
-  let cur = '';
+  const fields = [];
+  let currentField = '';
   let inQuotes = false;
   for (let i = 0; i < line.length; i++) {
-    const c = line[i];
-    if (c === '"') {
-      if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+    const char = line[i];
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') { currentField += '"'; i++; }
       else inQuotes = !inQuotes;
     } else if (inQuotes) {
-      cur += c;
-    } else if (c === ',') {
-      out.push(cur);
-      cur = '';
+      currentField += char;
+    } else if (char === ',') {
+      fields.push(currentField);
+      currentField = '';
     } else {
-      cur += c;
+      currentField += char;
     }
   }
-  out.push(cur);
-  return out;
+  fields.push(currentField);
+  return fields;
 }
 
-/** Cabecera fija para que el JSON siempre tenga las mismas claves. */
+/** Cabecera fija para que el JSON de sesiones siempre tenga las mismas claves. */
 const CSV_COLUMNS = ['connectionName', 'sessionId', 'videoPath', 'typescriptPath'];
 
-/** Devuelve el contenido del CSV como array de objetos con connectionName, sessionId, videoPath, typescriptPath. */
+/**
+ * Lee el CSV de sesiones y devuelve un array de objetos con connectionName, sessionId, videoPath, typescriptPath.
+ * Si la primera línea no es cabecera (connectionName, sessionId), se trata como datos (fallback).
+ * @returns {Array<{ connectionName: string, sessionId: string, videoPath: string, typescriptPath: string }>}
+ */
 function readSessionsFromCsv() {
   if (!fs.existsSync(DATA_CSV_PATH)) return [];
   const text = fs.readFileSync(DATA_CSV_PATH, 'utf8');
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
   if (lines.length === 0) return [];
 
-  const header = parseCsvLine(lines[0]);
-  const hasRealHeader = header[0] === 'connectionName' && header[1] === 'sessionId';
-  const startIndex = hasRealHeader ? 1 : 0;
+  const headerFields = parseCsvLine(lines[0]);
+  const hasRealHeader = headerFields[0] === 'connectionName' && headerFields[1] === 'sessionId';
+  const dataStartIndex = hasRealHeader ? 1 : 0;
 
   const rows = [];
-  for (let i = startIndex; i < lines.length; i++) {
+  for (let i = dataStartIndex; i < lines.length; i++) {
     const values = parseCsvLine(lines[i]);
     const row = {};
     CSV_COLUMNS.forEach((col, j) => {
@@ -79,34 +114,38 @@ const PORT = 3417;
 
 app.use(express.json());
 
-/** Cifra el payload; formato compatible con guacamole-lite (base64 desde cipher, iv en base64). */
+/**
+ * Cifra un objeto como token para guacamole-lite. Formato compatible: base64(cipher) y iv en base64.
+ * @param {object} value - Objeto a cifrar (configuración de conexión).
+ * @returns {string} Token en base64.
+ */
 function encryptToken(value) {
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(config.CRYPT_KEY), iv);
 
-  let encrypted = cipher.update(JSON.stringify(value), 'utf8', 'base64');
-  encrypted += cipher.final('base64');
+  let encryptedPayload = cipher.update(JSON.stringify(value), 'utf8', 'base64');
+  encryptedPayload += cipher.final('base64');
 
   const data = {
     iv: iv.toString('base64'),
-    value: encrypted
+    value: encryptedPayload
   };
 
   return Buffer.from(JSON.stringify(data)).toString('base64');
 }
 
 const websocketOptions = {
-  port: config.WEBSOCKET_PORT // WebSocket server port
+  port: config.WEBSOCKET_PORT
 };
 
 const guacdOptions = {
-  port: config.GUACD_PORT // guacd server port
+  port: config.GUACD_PORT
 };
 
 const clientOptions = {
   crypt: {
     cypher: config.CIPHER,
-    key: config.CRYPT_KEY // Use a secure key
+    key: config.CRYPT_KEY
   }
 };
 
@@ -121,19 +160,18 @@ app.get('/token', (req, res) => {
 
   const connectionConfig = JSON.parse(JSON.stringify(baseConfig));
   const sessionId = crypto.randomUUID();
-  // connectionConfig.additionalProperties.sessionId = sessionId;
 
-  const type = connectionConfig.connection.type;
+  const connectionType = connectionConfig.connection.type;
   let videoPath = null;
   let typescriptPath = null;
 
-  if (['rdp', 'vnc'].includes(type)) {
+  if (['rdp', 'vnc'].includes(connectionType)) {
     connectionConfig.connection.settings['recording-path'] = config.RECORDINGS_PATH;
     connectionConfig.connection.settings['recording-name'] = `${sessionId}.guac`;
     connectionConfig.connection.settings['create-recording-path'] = 'true';
     videoPath = path.join(config.RECORDING_PATH_HOST, `${sessionId}.guac`);
   }
-  if (type === 'ssh') {
+  if (connectionType === 'ssh') {
     connectionConfig.connection.settings['typescript-path'] = config.TYPESCRIPT_PATH;
     connectionConfig.connection.settings['typescript-name'] = `${sessionId}.typescript`;
     connectionConfig.connection.settings['create-typescript-path'] = 'true';
@@ -151,30 +189,42 @@ app.get('/sessions', (req, res) => {
   res.json(sessions);
 });
 
-/** Busca una sesión por sessionId en el CSV. */
+/**
+ * Busca una sesión por sessionId en el CSV.
+ * @param {string} sessionId - Identificador de la sesión.
+ * @returns {{ connectionName: string, sessionId: string, videoPath: string, typescriptPath: string } | undefined}
+ */
 function findSessionBySessionId(sessionId) {
   const sessions = readSessionsFromCsv();
   return sessions.find((s) => (s.sessionId || '').trim() === String(sessionId).trim());
 }
 
-/** Resuelve la ruta real del archivo: prueba la del CSV y luego por sessionId en las carpetas configuradas. */
-function resolveFilePath(candidates) {
-  for (const p of candidates) {
-    const resolved = p ? path.resolve(p) : '';
-    if (resolved && fs.existsSync(resolved)) return resolved;
+/**
+ * Resuelve la ruta real del primer archivo que exista en la lista de candidatas.
+ * @param {string[]} filePathCandidates - Lista de rutas a probar (pueden ser relativas o absolutas).
+ * @returns {string|null} Ruta absoluta del archivo existente o null si ninguna existe.
+ */
+function resolveFilePath(filePathCandidates) {
+  for (const candidatePath of filePathCandidates) {
+    const resolvedPath = candidatePath ? path.resolve(candidatePath) : '';
+    if (resolvedPath && fs.existsSync(resolvedPath)) return resolvedPath;
   }
   return null;
 }
 
-/** Borra todos los archivos dentro de una carpeta (solo primer nivel). Devuelve número de archivos borrados. */
+/**
+ * Borra todos los archivos dentro de una carpeta (solo primer nivel; no borra subdirectorios).
+ * @param {string} dirPath - Ruta del directorio.
+ * @returns {number} Número de archivos eliminados.
+ */
 function clearDirectory(dirPath) {
   if (!dirPath || !fs.existsSync(dirPath)) return 0;
-  const resolved = path.resolve(dirPath);
+  const resolvedDirPath = path.resolve(dirPath);
   let count = 0;
-  const entries = fs.readdirSync(resolved, { withFileTypes: true });
-  for (const ent of entries) {
-    if (ent.isFile()) {
-      fs.unlinkSync(path.join(resolved, ent.name));
+  const entries = fs.readdirSync(resolvedDirPath, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.isFile()) {
+      fs.unlinkSync(path.join(resolvedDirPath, entry.name));
       count++;
     }
   }
@@ -229,6 +279,10 @@ app.post('/clean-recordings', (req, res) => {
   });
 });
 
+/**
+ * Inicia el servidor HTTP de la API en el puerto configurado.
+ * @returns {Promise<import('http').Server>}
+ */
 function startApi() {
   return new Promise((resolve) => {
     const server = app.listen(PORT, () => {

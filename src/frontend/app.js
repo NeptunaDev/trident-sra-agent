@@ -3,11 +3,13 @@
  *
  * Gestiona conexiones remotas VNC, SSH y RDP vía el servidor WebSocket de guacamole-lite:
  * obtiene un token de la API, abre el túnel, dibuja el display en #display y reenvía
- * eventos de ratón y teclado al cliente remoto.
+ * eventos de ratón y teclado al cliente remoto. También carga la tabla de sesiones desde
+ * GET /sessions, y permite ver grabaciones .guac en un modal y logs typescript en un popup.
  */
+
 import Guacamole from './vendor/guacamole-common.js';
 
-/** Instancia del cliente Guacamole; null cuando no hay sesión activa. */
+/** Instancia del cliente Guacamole (conexión en vivo). Null cuando no hay sesión activa. */
 let client = null;
 
 /** Teclado global: reenvía keydown/keyup al cliente remoto salvo cuando el foco está en un input. */
@@ -19,11 +21,11 @@ let keyboard = null;
  * @returns {boolean}
  */
 function isTextInputFocused() {
-  const el = document.activeElement;
-  if (!el) return false;
-  const tag = el.tagName && el.tagName.toLowerCase();
-  if (tag === 'input' || tag === 'textarea') return true;
-  return el.isContentEditable === true;
+  const activeElement = document.activeElement;
+  if (!activeElement) return false;
+  const tagName = activeElement.tagName && activeElement.tagName.toLowerCase();
+  if (tagName === 'input' || tagName === 'textarea') return true;
+  return activeElement.isContentEditable === true;
 }
 
 if (!keyboard) {
@@ -49,16 +51,16 @@ if (!keyboard) {
  * @param {string} token - Token cifrado de conexión (generado por GET /token?connection=...)
  */
 async function startClient(token) {
-  const encodeUri = `ws://localhost:8080/?token=${encodeURIComponent(token)}`;
-  const tunnel = new Guacamole.WebSocketTunnel(encodeUri);
+  const webSocketUrl = `ws://localhost:8080/?token=${encodeURIComponent(token)}`;
+  const tunnel = new Guacamole.WebSocketTunnel(webSocketUrl);
   client = new Guacamole.Client(tunnel);
 
   const display = document.getElementById('display');
   display.innerHTML = '';
-  const element = client.getDisplay().getElement();
-  display.appendChild(element);
+  const displayElement = client.getDisplay().getElement();
+  display.appendChild(displayElement);
 
-  const mouse = new Guacamole.Mouse(element);
+  const mouse = new Guacamole.Mouse(displayElement);
   mouse.onmousedown = mouse.onmouseup = mouse.onmousemove = (state) => {
     if (client) client.sendMouseState(state);
   };
@@ -66,9 +68,14 @@ async function startClient(token) {
   client.connect();
 }
 
+/** URL base de la API (ej. http://localhost:3417). Se obtiene del preload (electronAPI.getApiPort()). */
 const API_BASE = `http://localhost:${(typeof window !== 'undefined' && window.electronAPI?.getApiPort?.()) || '3417'}`;
 
-/** Normaliza un objeto de sesión por si las claves vienen con otro nombre. */
+/**
+ * Normaliza un objeto de sesión por si las claves vienen con otro nombre (snake_case vs camelCase).
+ * @param {object} row - Objeto crudo de sesión (del CSV o API).
+ * @returns {{ connectionName: string, sessionId: string, videoPath: string, typescriptPath: string }}
+ */
 function normalizeSession(row) {
   return {
     connectionName: row.connectionName ?? row.connection_name ?? '',
@@ -78,24 +85,30 @@ function normalizeSession(row) {
   };
 }
 
-/** Trunca texto largo y pone el completo en title. */
+/**
+ * Trunca texto largo para mostrar en celda y deja el texto completo para el atributo title.
+ * @param {string} text - Texto a mostrar.
+ * @param {number} maxLen - Longitud máxima antes de truncar (por defecto 40).
+ * @returns {{ short: string, title: string }}
+ */
 function cellWithTitle(text, maxLen = 40) {
-  const s = String(text || '').trim();
-  if (!s) return { short: '—', title: '' };
-  return { short: s.length > maxLen ? s.slice(0, maxLen) + '…' : s, title: s };
+  const str = String(text || '').trim();
+  if (!str) return { short: '—', title: '' };
+  return { short: str.length > maxLen ? str.slice(0, maxLen) + '…' : str, title: str };
 }
 
 /**
- * Obtiene las sesiones del endpoint /sessions y rellena la tabla.
+ * Obtiene las sesiones del endpoint GET /sessions y rellena la tabla #sessions-tbody.
+ * Muestra u oculta el mensaje "No hay sesiones" según corresponda.
  */
 async function loadSessionsTable() {
   const tbody = document.getElementById('sessions-tbody');
   const emptyEl = document.getElementById('sessions-empty');
   if (!tbody || !emptyEl) return;
   try {
-    const res = await fetch(`${API_BASE}/sessions`);
-    const data = await res.json();
-    const sessions = Array.isArray(data) ? data : [];
+    const response = await fetch(`${API_BASE}/sessions`);
+    const sessionsData = await response.json();
+    const sessions = Array.isArray(sessionsData) ? sessionsData : [];
     tbody.innerHTML = '';
     if (sessions.length === 0) {
       emptyEl.classList.add('visible');
@@ -103,20 +116,20 @@ async function loadSessionsTable() {
     }
     emptyEl.classList.remove('visible');
     sessions.forEach((row) => {
-      const s = normalizeSession(row);
-      const conn = escapeHtml(s.connectionName || '—');
-      const sid = escapeHtml(s.sessionId);
-      const vid = cellWithTitle(s.videoPath);
-      const typ = cellWithTitle(s.typescriptPath);
-      const hasVideo = (s.videoPath || '').trim().length > 0;
-      const hasText = (s.typescriptPath || '').trim().length > 0;
+      const session = normalizeSession(row);
+      const connectionNameEscaped = escapeHtml(session.connectionName || '—');
+      const sessionIdEscaped = escapeHtml(session.sessionId);
+      const videoCellInfo = cellWithTitle(session.videoPath);
+      const typescriptCellInfo = cellWithTitle(session.typescriptPath);
+      const hasVideo = (session.videoPath || '').trim().length > 0;
+      const hasText = (session.typescriptPath || '').trim().length > 0;
       const tr = document.createElement('tr');
-      tr.dataset.sessionId = s.sessionId;
+      tr.dataset.sessionId = session.sessionId;
       tr.innerHTML = `
-        <td class="cell-connection">${conn}</td>
-        <td class="cell-session"><code title="${escapeHtml(sid)}">${escapeHtml(sid)}</code></td>
-        <td class="cell-path" title="${escapeHtml(vid.title)}">${escapeHtml(vid.short === '—' ? '—' : 'Sí')}</td>
-        <td class="cell-path" title="${escapeHtml(typ.title)}">${escapeHtml(typ.short === '—' ? '—' : 'Sí')}</td>
+        <td class="cell-connection">${connectionNameEscaped}</td>
+        <td class="cell-session"><code title="${escapeHtml(sessionIdEscaped)}">${escapeHtml(sessionIdEscaped)}</code></td>
+        <td class="cell-path" title="${escapeHtml(videoCellInfo.title)}">${escapeHtml(videoCellInfo.short === '—' ? '—' : 'Sí')}</td>
+        <td class="cell-path" title="${escapeHtml(typescriptCellInfo.title)}">${escapeHtml(typescriptCellInfo.short === '—' ? '—' : 'Sí')}</td>
         <td class="cell-actions">
           <button type="button" class="btn-cell btn-video" ${hasVideo ? '' : 'disabled'} title="Ver grabación">Ver video</button>
           <button type="button" class="btn-cell btn-text" ${hasText ? '' : 'disabled'} title="Ver log de texto">Ver texto</button>
@@ -130,6 +143,11 @@ async function loadSessionsTable() {
   }
 }
 
+/**
+ * Escapa una cadena para insertar en HTML y evitar XSS.
+ * @param {string} str - Texto a escapar.
+ * @returns {string}
+ */
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
@@ -137,26 +155,29 @@ function escapeHtml(str) {
 }
 
 /**
- * Muestra u oculta el panel (botones + tabla) según si hay sesión activa.
+ * Muestra u oculta el panel de protocolos y la tabla de sesiones según si hay sesión activa.
+ * Aplica la clase .connected al contenedor .app cuando connected es true.
+ * @param {boolean} connected - True si hay una conexión Guacamole activa.
  */
 function setConnected(connected) {
-  const app = document.querySelector('.app');
-  if (app) app.classList.toggle('connected', connected);
+  const appEl = document.querySelector('.app');
+  if (appEl) appEl.classList.toggle('connected', connected);
 }
 
 /**
- * Obtiene un token de conexión de la API y arranca el cliente con él.
+ * Obtiene un token de conexión de la API y arranca el cliente Guacamole con él.
  * @param {string} nameConnection - Clave de conexión en config (ej. 'ubuntu-vnc', 'ubuntu-ssh', 'windows-rdp')
  */
 async function connect(nameConnection) {
-  const token = await fetch(`${API_BASE}/token?connection=${encodeURIComponent(nameConnection)}`);
-  const data = await token.json();
+  const tokenResponse = await fetch(`${API_BASE}/token?connection=${encodeURIComponent(nameConnection)}`);
+  const data = await tokenResponse.json();
   await startClient(data.token);
   setConnected(true);
 }
 
 /**
  * Cierra la sesión Guacamole, libera el cliente y limpia el área #display.
+ * Vuelve a cargar la tabla de sesiones para reflejar el estado actual.
  */
 async function disconnect() {
   if (client) {
@@ -169,17 +190,20 @@ async function disconnect() {
   await loadSessionsTable();
 }
 
-/** Abre popup con el log typescript de la sesión (texto plano, estilo terminal). */
+/**
+ * Abre un popup con el log typescript de la sesión (texto plano, estilo terminal con números de línea).
+ * @param {string} sessionId - Identificador de la sesión.
+ */
 async function openLogPopup(sessionId) {
   try {
-    const res = await fetch(`${API_BASE}/view-log?sessionId=${encodeURIComponent(sessionId)}`);
-    const text = await res.text();
-    const w = window.open('', '_blank', 'width=800,height=560,scrollbars=yes,resizable=yes');
-    if (!w) return;
-    const safe = escapeHtml(text) || '(vacío)';
-    const lines = safe.split('\n').length;
-    const lineNumbers = Array.from({ length: lines }, (_, i) => i + 1).join('\n');
-    w.document.write(`
+    const response = await fetch(`${API_BASE}/view-log?sessionId=${encodeURIComponent(sessionId)}`);
+    const text = await response.text();
+    const popupWindow = window.open('', '_blank', 'width=800,height=560,scrollbars=yes,resizable=yes');
+    if (!popupWindow) return;
+    const escapedLogContent = escapeHtml(text) || '(vacío)';
+    const lineCount = escapedLogContent.split('\n').length;
+    const lineNumbers = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n');
+    popupWindow.document.write(`
       <!DOCTYPE html><html><head><meta charset="utf-8"><title>Typescript ${escapeHtml(sessionId)}</title>
       <style>
         *{box-sizing:border-box;}
@@ -191,22 +215,23 @@ async function openLogPopup(sessionId) {
       </style></head>
       <body>
         <div class="log-header">Session ${escapeHtml(sessionId)} — Typescript log</div>
-        <div class="log-wrap"><pre class="line-nums">${escapeHtml(lineNumbers)}</pre><pre class="log-content">${safe}</pre></div>
+        <div class="log-wrap"><pre class="line-nums">${escapeHtml(lineNumbers)}</pre><pre class="log-content">${escapedLogContent}</pre></div>
       </body></html>
     `);
-    w.document.close();
+    popupWindow.document.close();
   } catch (e) {
     alert('No se pudo cargar el log.');
   }
 }
 
-/** Instancia del reproductor de grabación .guac (SessionRecording); null si no hay modal abierto. */
-let reproductor = null;
+/** Instancia del reproductor de grabación .guac (Guacamole.SessionRecording). Null si no hay modal abierto. */
+let sessionRecordingPlayer = null;
 
 /**
- * Abre el modal y reproduce la grabación .guac en la interfaz.
- * Flujo: StaticHTTPTunnel(view-video URL) → SessionRecording(tunnel) → display en #video-display,
- * onresize para scale(), connect() y play(). Datos de sesión vienen del CSV (GET /sessions, GET /view-video).
+ * Abre el modal de reproducción y reproduce la grabación .guac en #video-display.
+ * Flujo: StaticHTTPTunnel(URL de view-video) → SessionRecording(tunnel) → display en #video-display,
+ * onresize para scale(), connect() y play(). Los datos de sesión vienen del CSV (GET /sessions, GET /view-video).
+ * @param {string} sessionId - Identificador de la sesión cuya grabación se va a reproducir.
  */
 function abrirReproductor(sessionId) {
   const display = document.getElementById('video-display');
@@ -216,9 +241,9 @@ function abrirReproductor(sessionId) {
 
   const videoUrl = `${API_BASE}/view-video?sessionId=${encodeURIComponent(sessionId)}`;
   const tunnel = new Guacamole.StaticHTTPTunnel(videoUrl);
-  reproductor = new Guacamole.SessionRecording(tunnel);
+  sessionRecordingPlayer = new Guacamole.SessionRecording(tunnel);
 
-  const playerDisplay = reproductor.getDisplay();
+  const playerDisplay = sessionRecordingPlayer.getDisplay();
   const playerElement = playerDisplay.getElement();
   display.appendChild(playerElement);
 
@@ -229,33 +254,41 @@ function abrirReproductor(sessionId) {
   };
 
   modal.classList.remove('hidden');
-  reproductor.connect();
+  sessionRecordingPlayer.connect();
   setTimeout(() => {
-    if (reproductor) reproductor.play();
+    if (sessionRecordingPlayer) sessionRecordingPlayer.play();
   }, 1000);
 }
 
-/** Cierra el modal del reproductor: pausa, desconecta y oculta. */
+/** Cierra el modal del reproductor: pausa, desconecta la grabación y oculta el modal. */
 function cerrarVideo() {
-  if (reproductor) {
-    reproductor.pause();
-    reproductor.disconnect();
-    reproductor = null;
+  if (sessionRecordingPlayer) {
+    sessionRecordingPlayer.pause();
+    sessionRecordingPlayer.disconnect();
+    sessionRecordingPlayer = null;
   }
   const modal = document.getElementById('modal-video');
   if (modal) modal.classList.add('hidden');
 }
 
-/** Abre el reproductor de grabación .guac en el modal (mismo flujo que el doc, con CSV). */
+/**
+ * Abre el reproductor de grabación .guac en el modal (wrapper que delega en abrirReproductor).
+ * @param {string} sessionId - Identificador de la sesión.
+ */
 function openVideoPopup(sessionId) {
   abrirReproductor(sessionId);
 }
 
+/**
+ * Manejador de clics en la tabla de sesiones: "Ver video" o "Ver texto".
+ * Obtiene el sessionId del tr y llama a openVideoPopup o openLogPopup según el botón.
+ * @param {MouseEvent} e - Evento de clic.
+ */
 function onSessionActionClick(e) {
   const btn = e.target.closest('.btn-video, .btn-text');
   if (!btn || btn.disabled) return;
-  const tr = e.target.closest('tr');
-  const sessionId = tr && tr.dataset.sessionId;
+  const row = e.target.closest('tr');
+  const sessionId = row && row.dataset.sessionId;
   if (!sessionId) return;
   if (btn.classList.contains('btn-video')) openVideoPopup(sessionId);
   else openLogPopup(sessionId);
@@ -269,9 +302,9 @@ document.getElementById('btn-disconnect').addEventListener('click', disconnect);
 const sessionsTbody = document.getElementById('sessions-tbody');
 if (sessionsTbody) sessionsTbody.addEventListener('click', onSessionActionClick);
 
-document.getElementById('btn-play-video').addEventListener('click', () => { if (reproductor) reproductor.play(); });
-document.getElementById('btn-pause-video').addEventListener('click', () => { if (reproductor) reproductor.pause(); });
-document.getElementById('btn-seek-video').addEventListener('click', () => { if (reproductor) reproductor.seek(0); });
+document.getElementById('btn-play-video').addEventListener('click', () => { if (sessionRecordingPlayer) sessionRecordingPlayer.play(); });
+document.getElementById('btn-pause-video').addEventListener('click', () => { if (sessionRecordingPlayer) sessionRecordingPlayer.pause(); });
+document.getElementById('btn-seek-video').addEventListener('click', () => { if (sessionRecordingPlayer) sessionRecordingPlayer.seek(0); });
 document.getElementById('btn-close-video').addEventListener('click', cerrarVideo);
 document.querySelector('.modal-backdrop[data-action="close"]')?.addEventListener('click', cerrarVideo);
 
