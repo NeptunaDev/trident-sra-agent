@@ -1,0 +1,22 @@
+{
+  "name": "trident-agent",
+  "version": "1.0.0",
+  "description": "Electron app with frontend and API",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "postinstall": "node scripts/copy-guacamole-vendor.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "guacamole-common-js": "^1.5.0",
+    "guacamole-lite": "^1.2.0"
+  }
+}

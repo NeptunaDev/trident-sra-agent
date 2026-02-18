@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* ws://localhost:*" />
+  <title>Trident Agent</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="app">
+    <header>
+      <h1>Trident Agent</h1>
+      <p class="subtitle">Elige un protocolo</p>
+    </header>
+    <main class="home">
+      <div id="display"></div>
+      <div id="home-panel" class="home-panel">
+        <div class="home-buttons">
+          <div class="protocol-buttons">
+            <button type="button" class="home-btn" id="btn-vnc" data-connection="ubuntu-vnc">VNC</button>
+            <button type="button" class="home-btn" id="btn-ssh" data-connection="ubuntu-ssh">SSH</button>
+            <button type="button" class="home-btn" id="btn-rdp" data-connection="windows-rdp">RDP</button>
+          </div>
+          <button type="button" class="home-btn home-btn-danger" id="btn-disconnect">Desconectar</button>
+        </div>
+        <section class="sessions-section card">
+          <h2>Sesiones</h2>
+          <div class="table-wrap">
+            <table class="sessions-table" id="sessions-table">
+              <thead>
+                <tr>
+                  <th>Conexión</th>
+                  <th>Session ID</th>
+                  <th>Video</th>
+                  <th>Typescript</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="sessions-tbody">
+              </tbody>
+            </table>
+          </div>
+          <p class="sessions-empty" id="sessions-empty">No hay sesiones.</p>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Reproductor de Sesión (.guac) -->
+  <div id="modal-video" class="modal hidden">
+    <div class="modal-backdrop" data-action="close"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Reproductor de sesión</h2>
+        <button type="button" class="modal-close" id="btn-close-video" aria-label="Cerrar">×</button>
+      </div>
+      <div id="video-display" class="video-display"></div>
+      <div class="modal-toolbar">
+        <button type="button" class="home-btn" id="btn-play-video">▶ Reproducir</button>
+        <button type="button" class="home-btn" id="btn-pause-video">⏸ Pausar</button>
+        <button type="button" class="home-btn" id="btn-seek-video">⏮ Reiniciar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+
+</html>

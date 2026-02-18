@@ -1,0 +1,34 @@
+# Dependencias
+node_modules/
+
+# Volúmenes y datos (Docker, DB, recordings, etc.)
+data/
+
+# Build y artefactos
+dist/
+build/
+out/
+*.log
+*.tsbuildinfo
+
+# Sistema y IDE
+.DS_Store
+.git/
+*.tgz
+*.zip
+
+# Lockfiles (pesados, no necesarios para contexto)
+package-lock.json
+
+# Vendor copiado (guacamole-common.js, muy grande)
+src/frontend/vendor/
+
+# Caché y temporales
+.cache/
+tmp/
+temp/
+*.tmp
+*.temp
+.env
+.env.*
+!.env.example

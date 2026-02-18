@@ -1,0 +1,353 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.home {
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+}
+
+.home-buttons {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.home-btn {
+  min-width: 120px;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.home-btn-danger {
+  background: #dc2626;
+}
+
+.home-btn-danger:hover {
+  background: #b91c1c;
+}
+
+.home-panel {
+  width: 100%;
+}
+
+.protocol-buttons {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Con sesión activa: ocultar solo protocolos y tabla; el botón Desconectar sigue visible */
+.app.connected .home-panel .protocol-buttons,
+.app.connected .home-panel .sessions-section {
+  display: none;
+}
+
+.app.connected .home-buttons {
+  justify-content: center;
+  margin-top: 0.75rem;
+}
+
+.sessions-section {
+  margin-top: 1rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(71, 85, 105, 0.5);
+}
+
+.sessions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  table-layout: fixed;
+}
+
+.sessions-table th,
+.sessions-table td {
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(71, 85, 105, 0.4);
+  vertical-align: middle;
+}
+
+.sessions-table th {
+  color: #94a3b8;
+  font-weight: 600;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.sessions-table th:first-child,
+.sessions-table td:first-child { width: 22%; }
+.sessions-table th:nth-child(2),
+.sessions-table td:nth-child(2) { width: 38%; }
+.sessions-table th:nth-child(3),
+.sessions-table td:nth-child(3) { width: 10%; }
+.sessions-table th:nth-child(4),
+.sessions-table td:nth-child(4) { width: 10%; }
+.sessions-table th:nth-child(5),
+.sessions-table td:nth-child(5) { width: 18%; }
+
+.cell-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.btn-cell {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  background: #475569;
+  color: #e2e8f0;
+}
+
+.btn-cell:hover:not(:disabled) {
+  background: #64748b;
+}
+
+.btn-cell:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-cell.btn-video {
+  background: #3b82f6;
+}
+
+.btn-cell.btn-video:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.btn-cell.btn-text {
+  background: #059669;
+}
+
+.btn-cell.btn-text:hover:not(:disabled) {
+  background: #047857;
+}
+
+.sessions-table td {
+  color: #e2e8f0;
+}
+
+.sessions-table tbody tr:hover {
+  background: rgba(51, 65, 85, 0.4);
+}
+
+.sessions-table .cell-connection {
+  font-weight: 500;
+  color: #cbd5e1;
+}
+
+.sessions-table .cell-session code {
+  font-size: 0.8rem;
+  background: rgba(15, 23, 42, 0.8);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.sessions-table .cell-path {
+  color: #94a3b8;
+}
+
+.sessions-table .cell-error {
+  color: #f87171;
+  text-align: center;
+  padding: 1rem;
+}
+
+.sessions-empty {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 0.75rem 0 0 0;
+  display: none;
+}
+
+.sessions-empty.visible {
+  display: block;
+}
+
+.card {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.card h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  color: #cbd5e1;
+}
+
+button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+button:hover {
+  background: #2563eb;
+}
+
+input {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+input::placeholder {
+  color: #64748b;
+}
+
+pre {
+  margin: 0.75rem 0 0 0;
+  padding: 0.75rem;
+  background: #0f172a;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  overflow-x: auto;
+  color: #94a3b8;
+  min-height: 1.5em;
+}
+
+pre.error {
+  color: #f87171;
+}
+
+/* Modal Reproductor de Sesión */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.modal.hidden {
+  display: none;
+}
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+}
+.modal-content {
+  position: relative;
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 12px;
+  max-width: 95vw;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #334155;
+}
+.modal-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: #e2e8f0;
+}
+.modal-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  line-height: 1;
+}
+.modal-close:hover {
+  color: #e2e8f0;
+}
+.video-display {
+  min-height: 400px;
+  max-height: 70vh;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+}
+.video-display canvas {
+  max-width: 100%;
+  height: auto;
+}
+.modal-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #334155;
+}

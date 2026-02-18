@@ -1,0 +1,136 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: guacamole-postgres
+    environment:
+      POSTGRES_DB: guacamole_db
+      POSTGRES_USER: guacamole_user
+      POSTGRES_PASSWORD: guacamole_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
+    networks:
+      - guacamole-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U guacamole_user -d guacamole_db"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  # Asegura columnas de auditoría si la BD ya existía (idempotente; se ejecuta en cada up)
+  db-ensure:
+    image: postgres:15
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: guacamole_pass
+    networks:
+      - guacamole-network
+    restart: "no"
+    command:
+      - sh
+      - -c
+      - |
+        psql -h postgres -U guacamole_user -d guacamole_db -v ON_ERROR_STOP=1 \
+          -c "ALTER TABLE guacamole_connection_history ADD COLUMN IF NOT EXISTS session_id VARCHAR(256);" \
+          -c "ALTER TABLE guacamole_connection_history ADD COLUMN IF NOT EXISTS video_path TEXT;" \
+          -c "ALTER TABLE guacamole_connection_history ADD COLUMN IF NOT EXISTS text_path TEXT;" \
+          -c "CREATE INDEX IF NOT EXISTS idx_guacamole_connection_history_session_id ON guacamole_connection_history(session_id);" \
+          -c "CREATE INDEX IF NOT EXISTS idx_guacamole_connection_history_start_date ON guacamole_connection_history(start_date DESC);"
+
+  guacd:
+    image: guacamole/guacd:latest
+    platform: linux/amd64  # Imagen solo amd64; en ARM (Mac M1/M2, etc.) corre por emulación
+    container_name: guacamole-guacd
+    ports:
+      - "4822:4822"
+    networks:
+      - guacamole-network
+    volumes:
+    - ./data/recordings:/var/lib/guacamole/recordings # Para video (RDP/VNC)
+    - ./data/typescript:/var/lib/guacamole/typescript # Para texto (SSH)
+    restart: unless-stopped
+
+  guacamole:
+    image: guacamole/guacamole:latest
+    container_name: guacamole-client
+    depends_on:
+      - postgres
+      - guacd
+    environment:
+      GUACD_HOSTNAME: guacd
+      GUACD_PORT: "4822"
+
+      POSTGRESQL_HOSTNAME: postgres
+      POSTGRESQL_PORT: "5432"
+      POSTGRESQL_DATABASE: guacamole_db
+      POSTGRESQL_USERNAME: guacamole_user
+      POSTGRESQL_PASSWORD: guacamole_pass
+
+    ports:
+      - "8081:8080"
+    networks:
+      - guacamole-network
+    restart: unless-stopped
+    
+  # Solo en Linux con KVM. En Mac/ARM no existe /dev/kvm. Arrancar con: docker compose --profile windows up -d
+  windows-rdp:
+    profiles:
+      - windows
+    image: dockurr/windows
+    container_name: windows-rdp-target
+    devices:
+      - /dev/kvm
+    cap_add:
+      - NET_ADMIN
+    environment:
+      #USERNAME: Administrator
+      #PASSWORD: Windows123!
+      VERSION: "10"
+      RAM_SIZE: "2G"
+    ports:
+      - "8006:8006"
+      - "3389:3389/tcp"
+      - "3389:3389/udp" 
+    volumes:
+      - ./data/windows:/storage
+      - /dev/kvm:/dev/kvm:rw
+    networks:
+      - guacamole-network
+    restart: on-failure
+
+  ubuntu-ssh:
+    image: ubuntu:22.04
+    container_name: ubuntu-ssh-target
+    command: >
+      bash -c "apt-get update &&
+      apt-get install -y openssh-server sudo &&
+      (id -u sshuser >/dev/null 2>&1 || (useradd -m -s /bin/bash sshuser && echo 'sshuser:Ubuntu123!' | chpasswd)) &&
+      usermod -aG sudo sshuser &&
+      mkdir -p /var/run/sshd &&
+      /usr/sbin/sshd -D"
+    ports:
+      - "2222:22"
+    networks:
+      - guacamole-network
+    restart: unless-stopped
+
+  ubuntu-vnc:
+    image: consol/ubuntu-xfce-vnc
+    container_name: ubuntu-vnc-target
+    environment:
+      VNC_PW: Ubuntu123!
+      VNC_RESOLUTION: 1920x1080
+    ports:
+      - "5900:5901"
+    networks:
+      - guacamole-network
+    restart: unless-stopped
+
+networks:
+  guacamole-network:
+    driver: bridge
