@@ -4,13 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import Layout from './components/Layout';
 import Header from './components/Header';
-import ProtocolButtons from './components/ProtocolButtons';
-import RemoteDisplay from './components/RemoteDisplay';
 import SessionsSection from './components/SessionsSection';
 import ModalVideo from './components/ModalVideo';
 import ModalDeleteAll from './components/ModalDeleteAll';
 import ModalDeleteSession from './components/ModalDeleteSession';
-import { fetchToken, getViewLogUrl } from './api/endpoints';
+import { getViewLogUrl } from './api/endpoints';
 import { SESSION_QUERY_KEY } from './hooks/useSessions';
 
 function escapeHtml(str) {
@@ -22,30 +20,10 @@ function escapeHtml(str) {
 export default function App() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [connected, setConnected] = useState(false);
-  const [token, setToken] = useState(null);
   const [videoModalSessionId, setVideoModalSessionId] = useState(null);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deleteAllFirstSessionId, setDeleteAllFirstSessionId] = useState(null);
   const [deleteSessionId, setDeleteSessionId] = useState(null);
-
-  const handleConnect = async (connection) => {
-    try {
-      const { token: newToken } = await fetchToken(connection);
-      setToken(newToken);
-      setConnected(true);
-      toast.success(t('toast.connected'));
-    } catch (err) {
-      toast.error(t('toast.connectError'));
-    }
-  };
-
-  const handleDisconnect = () => {
-    setToken(null);
-    setConnected(false);
-    toast.info(t('toast.disconnected'));
-    queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
-  };
 
   const handleViewLog = useCallback(
     async (sessionId) => {
@@ -78,23 +56,16 @@ export default function App() {
 
   return (
     <Layout>
-      <Header connected={connected} onDisconnect={handleDisconnect} />
-      {connected && token ? (
-        <RemoteDisplay token={token} onDisconnect={handleDisconnect} onError={() => toast.error(t('toast.connectError'))} />
-      ) : (
-        <>
-          <ProtocolButtons onConnect={handleConnect} />
-          <SessionsSection
-            onDeleteAll={(firstSessionId) => {
-              setDeleteAllFirstSessionId(firstSessionId ?? null);
-              setDeleteAllOpen(true);
-            }}
-            onViewVideo={setVideoModalSessionId}
-            onViewLog={handleViewLog}
-            onDeleteSession={setDeleteSessionId}
-          />
-        </>
-      )}
+      <Header />
+      <SessionsSection
+        onDeleteAll={(firstSessionId) => {
+          setDeleteAllFirstSessionId(firstSessionId ?? null);
+          setDeleteAllOpen(true);
+        }}
+        onViewVideo={setVideoModalSessionId}
+        onViewLog={handleViewLog}
+        onDeleteSession={setDeleteSessionId}
+      />
 
       <ModalVideo
         sessionId={videoModalSessionId}

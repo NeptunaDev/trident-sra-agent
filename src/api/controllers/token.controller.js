@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const path = require('path');
 const config = require('../config');
 const csvService = require('../services/csv.service');
+const sessionManager = require('../services/sessionManager');
 const tokenService = require('../services/token.service');
 
 /**
@@ -18,6 +19,14 @@ const tokenService = require('../services/token.service');
  * @param {import('express').Response} res
  */
 function getToken(req, res) {
+  if (sessionManager.isAtLimit()) { // Verifica límite de sesiones activas antes de generar token.
+    return res.status(429).json({
+      error: 'Límite de sesiones activas alcanzado',
+      limit: config.MAX_CONCURRENT_SESSIONS,
+      current: sessionManager.count(),
+    });
+  }
+
   const connectionName = req.query.connection.trim();
   const baseConfig = config.connections[connectionName];
 
@@ -40,6 +49,17 @@ function getToken(req, res) {
     connectionConfig.connection.settings['create-typescript-path'] = 'true';
     typescriptPath = path.join(config.TYPESCRIPT_PATH_HOST, `${sessionId}.typescript`);
   }
+
+  connectionConfig.query = {
+    ...(connectionConfig.query || {}),
+    sessionId,
+  };
+
+  sessionManager.registerSession(sessionId, { // Registro inicial de sesión antes de abrir WebSocket para asegurar que el contador de sesiones activas sea correcto en todo momento.
+    connectionId: connectionName,
+    connectionType,
+    startedAt: new Date(),
+  });
 
   csvService.appendSessionToCsv(connectionName, sessionId, videoPath, typescriptPath);
 

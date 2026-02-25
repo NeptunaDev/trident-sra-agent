@@ -12,6 +12,8 @@ const path = require('path');
 const ROOT_PATH = path.join(__dirname, '..', '..');
 
 module.exports = {
+
+  MAX_CONCURRENT_SESSIONS: parseInt(process.env.MAX_SESSIONS || '5', 10),
   /** Clave usada por guacamole-lite para cifrar el token de conexión (AES-256-CBC). Debe coincidir con la de guacd. */
   CRYPT_KEY: 'MySuperSecretKeyForParams1234567',
   /** Host donde corre guacd (daemon de Guacamole). */
