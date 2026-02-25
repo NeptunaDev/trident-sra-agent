@@ -9,6 +9,8 @@
 const GuacamoleLite = require('guacamole-lite');
 const config = require('../config');
 const sessionManager = require('../services/sessionManager');
+const logBuffer = require('../services/logBuffer');
+const agentEmitter = require('../services/eventEmitter');
 
 const websocketOptions = {
   port: config.WEBSOCKET_PORT
@@ -44,13 +46,34 @@ guacServer.on('open', (clientConnection) => {
     startedAt: existing.startedAt,
     clientConnection,
   });
+
+  logBuffer.addLog(
+    'INFO',
+    `Sesión iniciada (sessionId=${sessionId}, connectionId=${existing.connectionId}, type=${existing.connectionType})`,
+  );
+  agentEmitter.emit('session:started', {
+    sessionId,
+    connectionId: existing.connectionId,
+    connectionType: existing.connectionType,
+  });
 });
 
 guacServer.on('close', (clientConnection) => {
   const sessionId = getSessionIdFromClientConnection(clientConnection);
   if (!sessionId) return;
-  sessionManager.closeSession(sessionId);
+  const closed = sessionManager.closeSession(sessionId);
+  if (!closed) return;
+
+  logBuffer.addLog('INFO', `Sesión cerrada (sessionId=${sessionId})`);
+  agentEmitter.emit('session:ended', { sessionId });
   console.info(`Sesión cerrada: ${sessionId}`);
+});
+
+guacServer.on('error', (error) => {
+  const message = `Error de conexión con guacd: ${error?.message || 'desconocido'}`;
+  logBuffer.addLog('ERROR', message);
+  agentEmitter.emit('agent:error', { message });
+  console.error(message);
 });
 
 function forceCloseSession(sessionId) {

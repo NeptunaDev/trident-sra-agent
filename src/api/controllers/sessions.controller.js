@@ -8,6 +8,8 @@
 const csvService = require('../services/csv.service');
 const config = require('../config');
 const sessionManager = require('../services/sessionManager');
+const logBuffer = require('../services/logBuffer');
+const agentEmitter = require('../services/eventEmitter');
 const { forceCloseSession } = require('../guacamole');
 const { DEFAULT_PAGE, DEFAULT_LIMIT } = require('../schemas/sessions.schema');
 
@@ -91,6 +93,11 @@ function deleteActiveSession(req, res) {
 
   const socketClosed = forceCloseSession(sessionId);
   const removed = sessionManager.closeSession(sessionId);
+
+  if (removed) {
+    logBuffer.addLog('INFO', `Sesión cerrada (sessionId=${sessionId})`);
+    agentEmitter.emit('session:ended', { sessionId });
+  }
 
   return res.json({
     ok: removed,

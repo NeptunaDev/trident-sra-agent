@@ -24,6 +24,39 @@ export async function cleanRecordings() {
   return data;
 }
 
+/** GET /api/v1/sessions/active */
+export async function fetchActiveSessions() {
+  const { data } = await apiClient.get(`${API_V1}/sessions/active`);
+  return data;
+}
+
+/** DELETE /api/v1/sessions/active/:sessionId */
+export async function forceCloseSession(sessionId) {
+  const { data } = await apiClient.delete(`${API_V1}/sessions/active/${encodeURIComponent(sessionId)}`);
+  return data;
+}
+
+/** GET /api/v1/internal/logs */
+export async function fetchInternalLogs({ level, search, limit = 200 } = {}) {
+  const params = { limit }; 
+  if (level) params.level = level;//si se pasa level, se incluye en params; si no, no se incluye, lo que permite que el backend aplique su valor predeterminado (WARN,ERROR)
+  if (search) params.search = search;//si se pasa search, se incluye en params; si no, no se incluye, lo que permite que el backend aplique su valor predeterminado (sin filtro)
+  const { data } = await apiClient.get(`${API_V1}/internal/logs`, { params });
+  return data;
+}
+
+/** DELETE /api/v1/internal/logs */
+export async function cleanLogs() {
+  const { data } = await apiClient.delete(`${API_V1}/internal/logs`);
+  return data;
+}
+
+/** GET /api/v1/internal/status */
+export async function fetchInternalStatus() {
+  const { data } = await apiClient.get(`${API_V1}/internal/status`);
+  return data;
+}
+
 /** URL para GET /api/v1/view/log?sessionId= (para abrir en ventana o fetch texto) */
 export function getViewLogUrl(sessionId) {
   return `${getApiV1Base()}/view/log?sessionId=${encodeURIComponent(sessionId)}`;
