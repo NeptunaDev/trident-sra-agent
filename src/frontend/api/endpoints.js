@@ -24,6 +24,12 @@ export async function cleanRecordings() {
   return data;
 }
 
+/** DELETE /api/v1/sessions */
+export async function deleteAllSessions() {
+  const { data } = await apiClient.delete(`${API_V1}/sessions`);
+  return data;
+}
+
 /** GET /api/v1/sessions/active */
 export async function fetchActiveSessions() {
   const { data } = await apiClient.get(`${API_V1}/sessions/active`);
@@ -51,9 +57,9 @@ export async function cleanLogs() {
   return data;
 }
 
-/** GET /api/v1/internal/status */
+/** GET /api/v1/health */
 export async function fetchInternalStatus() {
-  const { data } = await apiClient.get(`${API_V1}/internal/status`);
+  const { data } = await apiClient.get(`${API_V1}/health`);
   return data;
 }
 
