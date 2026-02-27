@@ -8,20 +8,17 @@ const express = require('express');
 const routes = require('./routes');
 
 const app = express();
-const allowedOrigins = [
-  'http://localhost:3000',      // Next.js dev
-  'http://localhost:5173',      // Renderer Vite dev
-  process.env.NEXTJS_ORIGIN,    // Configurable para producción
-].filter(Boolean);
 
-// CORS: en desarrollo el front (Vite) corre en otro origen (ej. localhost:5173)
+// CORS abierto para cualquier origen.
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } 
+  // Si el cliente usa credentials: 'include', no se puede responder con '*'.
+  // Reflejamos el origen recibido para permitir cualquier origen con credenciales.
+  if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
 });
