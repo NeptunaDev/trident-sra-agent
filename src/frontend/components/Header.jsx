@@ -5,7 +5,7 @@ const LANGUAGES = [
   { code: 'en', label: 'EN' },
 ];
 
-export default function Header({ connected, onDisconnect }) {
+export default function Header() {
   const { t, i18n } = useTranslation();
 
   return (
@@ -15,15 +15,6 @@ export default function Header({ connected, onDisconnect }) {
         <p className="text-sm text-[#c0c5ce] mt-0.5">{t('app.subtitle')}</p>
       </div>
       <div className="flex items-center gap-3">
-        {connected && onDisconnect && (
-          <button
-            type="button"
-            onClick={onDisconnect}
-            className="px-4 py-2 rounded-lg text-white hover:bg-[#1a1a2e] border border-[rgba(91,194,231,0.2)] hover:border-[#5bc2e7] transition-colors"
-          >
-            {t('protocols.disconnect')}
-          </button>
-        )}
         <div className="flex items-center gap-2">
           {LANGUAGES.map(({ code, label }) => (
             <button

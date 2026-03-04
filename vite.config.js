@@ -6,7 +6,10 @@ export default defineConfig({
   base: './',
   root: 'src/frontend',
   plugins: [react()],
-  server: { port: 5173 },
+  server: {
+    port: 5173,
+    strictPort: true,
+  },
   build: {
     outDir: '../../dist/frontend',
     emptyOutDir: true,

@@ -9,7 +9,7 @@ const routes = require("./routes");
 
 const app = express();
 
-// CORS: en desarrollo el front (Vite) corre en otro origen (ej. localhost:5173)
+// CORS abierto para cualquier origen.
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
   res.setHeader(

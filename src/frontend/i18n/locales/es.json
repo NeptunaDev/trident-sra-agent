@@ -55,5 +55,65 @@
     "connectError": "No se pudo conectar",
     "logLoadError": "No se pudo cargar el log",
     "videoLoadError": "No se pudo cargar la grabación"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "logs": "Logs",
+    "alerts": "Alertas",
+    "media": "Recordings & Typescripts",
+    "settings": "Configuración"
+  },
+  "logs": {
+    "title": "Logs del agente",
+    "searchPlaceholder": "Buscar en mensajes...",
+    "levelAll": "Todos los niveles",
+    "levelInfo": "INFO",
+    "levelWarn": "WARN",
+    "levelError": "ERROR",
+    "clearButton": "Limpiar buffer",
+    "clearSuccess": "Buffer de logs limpiado",
+    "clearError": "No se pudo limpiar el buffer",
+    "loading": "Cargando logs...",
+    "error": "No se pudieron cargar los logs",
+    "empty": "No hay eventos para mostrar"
+  },
+  "alerts": {
+    "title": "Alertas",
+    "recentTitle": "Alertas recientes",
+    "recentEmpty": "Sin alertas WARN/ERROR.",
+    "viewAll": "Ver todas",
+    "markRead": "Marcar como vista",
+    "markAllRead": "Marcar todas como vistas",
+    "empty": "No hay alertas para este filtro",
+    "filters": {
+      "level": "Nivel",
+      "levelAll": "Todos",
+      "dateRange": "Rango de fecha",
+      "dateAll": "Todo",
+      "date24h": "Últimas 24 horas",
+      "date7d": "Últimos 7 días",
+      "date30d": "Últimos 30 días",
+      "status": "Estado",
+      "statusAll": "Todas",
+      "statusUnread": "No leídas",
+      "statusRead": "Leídas"
+    }
+  },
+  "media": {
+    "title": "Recordings & Typescripts",
+    "recordingsTitle": "Recordings (.guac)",
+    "typescriptsTitle": "Typescripts (.typescript)",
+    "protocol": "Protocolo",
+    "duration": "Duración",
+    "view": "Ver",
+    "viewLog": "Ver log",
+    "emptyRecordings": "No hay grabaciones",
+    "emptyTypescripts": "No hay typescripts",
+    "logViewerTitle": "Visor de log",
+    "logLoadError": "No se pudo cargar el contenido del log"
+  },
+  "settings": {
+    "title": "Configuración",
+    "placeholder": "Próximamente"
   }
 }

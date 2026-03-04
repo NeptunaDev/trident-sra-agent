@@ -11,11 +11,15 @@ const express = require('express');
 const sessionsRoutes = require('./sessions/index');
 const guacamoleRoutes = require('./guacamole/index');
 const viewRoutes = require('./view/index');
+const internalRoutes = require('./internal/index');
+const internalController = require('../controllers/internal.controller');
 
 const router = express.Router();
 
 router.use('/api/v1/sessions', sessionsRoutes);
 router.use('/api/v1/guacamole', guacamoleRoutes);
 router.use('/api/v1/view', viewRoutes);
+router.use('/api/v1/internal', internalRoutes);
+router.get('/api/v1/health', internalController.getStatus);
 
 module.exports = router;

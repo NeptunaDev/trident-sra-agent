@@ -55,5 +55,65 @@
     "connectError": "Could not connect",
     "logLoadError": "Could not load log",
     "videoLoadError": "Could not load recording"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "logs": "Logs",
+    "alerts": "Alerts",
+    "media": "Recordings & Typescripts",
+    "settings": "Settings"
+  },
+  "logs": {
+    "title": "Agent logs",
+    "searchPlaceholder": "Search in messages...",
+    "levelAll": "All levels",
+    "levelInfo": "INFO",
+    "levelWarn": "WARN",
+    "levelError": "ERROR",
+    "clearButton": "Clear buffer",
+    "clearSuccess": "Log buffer cleared",
+    "clearError": "Could not clear log buffer",
+    "loading": "Loading logs...",
+    "error": "Could not load logs",
+    "empty": "No events to display"
+  },
+  "alerts": {
+    "title": "Alerts",
+    "recentTitle": "Recent alerts",
+    "recentEmpty": "No WARN/ERROR alerts.",
+    "viewAll": "View all",
+    "markRead": "Mark as read",
+    "markAllRead": "Mark all as read",
+    "empty": "No alerts for this filter",
+    "filters": {
+      "level": "Level",
+      "levelAll": "All",
+      "dateRange": "Date range",
+      "dateAll": "All time",
+      "date24h": "Last 24 hours",
+      "date7d": "Last 7 days",
+      "date30d": "Last 30 days",
+      "status": "Status",
+      "statusAll": "All",
+      "statusUnread": "Unread",
+      "statusRead": "Read"
+    }
+  },
+  "media": {
+    "title": "Recordings & Typescripts",
+    "recordingsTitle": "Recordings (.guac)",
+    "typescriptsTitle": "Typescripts (.typescript)",
+    "protocol": "Protocol",
+    "duration": "Duration",
+    "view": "View",
+    "viewLog": "View log",
+    "emptyRecordings": "No recordings",
+    "emptyTypescripts": "No typescripts",
+    "logViewerTitle": "Log viewer",
+    "logLoadError": "Could not load log content"
+  },
+  "settings": {
+    "title": "Settings",
+    "placeholder": "Coming soon"
   }
 }
