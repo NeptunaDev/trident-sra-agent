@@ -1,11 +1,11 @@
-import { useEffect, useRef } from 'react';
-import Guacamole from '../vendor/guacamole-common.js';
+import { useEffect, useRef } from "react";
+import Guacamole from "../vendor/guacamole-common.js";
 
 function isTextInputFocused() {
   const active = document.activeElement;
   if (!active) return false;
   const tag = active.tagName?.toLowerCase();
-  if (tag === 'input' || tag === 'textarea') return true;
+  if (tag === "input" || tag === "textarea") return true;
   return active.isContentEditable === true;
 }
 
@@ -20,7 +20,7 @@ export default function RemoteDisplay({ token, onDisconnect, onError }) {
     if (!token || !containerRef.current) return;
 
     // URL base; el token se pasa a connect(data). La librería hace new WebSocket(tunnelURL + "?" + data).
-    const webSocketUrl = 'ws://localhost:8080/';
+    const webSocketUrl = "ws://localhost:8080/";
     const tunnel = new Guacamole.WebSocketTunnel(webSocketUrl);
     const client = new Guacamole.Client(tunnel);
     clientRef.current = client;
@@ -31,7 +31,7 @@ export default function RemoteDisplay({ token, onDisconnect, onError }) {
     if (tunnel.onerror !== undefined) tunnel.onerror = handleError;
     if (client.onerror !== undefined) client.onerror = handleError;
 
-    containerRef.current.innerHTML = '';
+    containerRef.current.innerHTML = "";
     const display = client.getDisplay();
     const displayElement = display.getElement();
     containerRef.current.appendChild(displayElement);
@@ -42,15 +42,18 @@ export default function RemoteDisplay({ token, onDisconnect, onError }) {
       const container = containerRef.current;
       const scale = Math.min(
         container.clientWidth / width,
-        container.clientHeight / height
+        container.clientHeight / height,
       );
       display.scale(scale);
     };
 
     const mouse = new Guacamole.Mouse(displayElement);
-    mouse.onmousedown = mouse.onmouseup = mouse.onmousemove = (state) => {
-      if (clientRef.current) clientRef.current.sendMouseState(state);
-    };
+    mouse.onmousedown =
+      mouse.onmouseup =
+      mouse.onmousemove =
+        (state) => {
+          if (clientRef.current) clientRef.current.sendMouseState(state);
+        };
 
     if (!keyboardRef.current) {
       const keyboard = new Guacamole.Keyboard(document);
@@ -68,7 +71,7 @@ export default function RemoteDisplay({ token, onDisconnect, onError }) {
     }
 
     // guacamole-lite espera: ws://host:8080/?token=ENCODED_TOKEN
-    client.connect('token=' + encodeURIComponent(token));
+    client.connect("token=" + encodeURIComponent(token));
 
     return () => {
       const clientToDisconnect = clientRef.current;

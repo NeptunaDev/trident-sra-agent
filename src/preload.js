@@ -9,12 +9,12 @@
  * No se expone Node ni require; solo getApiPort().
  */
 
-const { contextBridge } = require('electron');
+const { contextBridge } = require("electron");
 
-contextBridge.exposeInMainWorld('electronAPI', {
+contextBridge.exposeInMainWorld("electronAPI", {
   /**
    * Devuelve el puerto en el que escucha la API Express (p. ej. '3417').
    * @returns {string}
    */
-  getApiPort: () => process.env.API_PORT || '3417',
+  getApiPort: () => process.env.API_PORT || "3417",
 });
