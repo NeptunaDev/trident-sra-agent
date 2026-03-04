@@ -2,7 +2,10 @@
  * Rutas de sesiones y limpieza (CSV + recordings).
  *
  * GET    /api/v1/sessions — listado paginado ordenado por createdAt desc.
+ * GET    /api/v1/sessions/active — listado de sesiones activas en tiempo real.
  * POST   /api/v1/sessions/clean-recordings — vacía recordings, typescript y CSV.
+ * DELETE /api/v1/sessions — vacía recordings, typescript y CSV (alias para deleteAllSessions).
+ * DELETE /api/v1/sessions/active/:sessionId — cierre forzado de sesión activa.
  * DELETE /api/v1/sessions/:sessionId — borra archivos de la sesión y su fila en el CSV.
  */
 
@@ -17,7 +20,10 @@ const { validateRequest } = require('../../middleware/validateRequest');
 const router = express.Router();
 
 router.get('/', getSessionsSchema, validateRequest, sessionsController.getSessions);
+router.get('/active', sessionsController.getActiveSessions);
 router.post('/clean-recordings', cleanRecordingsController.postCleanRecordings);
+router.delete('/', cleanRecordingsController.postCleanRecordings);
+router.delete('/active/:sessionId', sessionIdParamSchema, validateRequest, sessionsController.deleteActiveSession);
 router.delete('/:sessionId', sessionIdParamSchema, validateRequest, deleteSessionController.deleteSession);
 
 module.exports = router;
