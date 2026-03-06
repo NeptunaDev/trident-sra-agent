@@ -9,7 +9,7 @@
 const GuacamoleLite = require('guacamole-lite');
 const config = require('../config');
 const sessionManager = require('../services/sessionManager');
-const logBuffer = require('../services/logBuffer');
+const internalLogService = require('../services/internalLog.service');
 const agentEmitter = require('../services/eventEmitter');
 
 const websocketOptions = {
@@ -34,27 +34,43 @@ function getSessionIdFromClientConnection(clientConnection) {
   return String(clientConnection.query.sessionId || '').trim();
 }
 
+function getConnectionIdFromClientConnection(clientConnection) {
+  return String(clientConnection?.query?.connectionId || '').trim();
+}
+
+function getConnectionTypeFromClientConnection(clientConnection) {
+  return String(clientConnection?.query?.connectionType || '').trim();
+}
+
 guacServer.on('open', (clientConnection) => {
   const sessionId = getSessionIdFromClientConnection(clientConnection);
   if (!sessionId) return;
+
   const existing = sessionManager.getSession(sessionId);
-  if (!existing) return;
+  if (existing?.clientConnection) return;
+
+  const connectionId = existing?.connectionId || getConnectionIdFromClientConnection(clientConnection);
+  const connectionType = existing?.connectionType || getConnectionTypeFromClientConnection(clientConnection);
+  const startedAt = existing?.startedAt || new Date().toISOString();
+
+  if (!connectionId || !connectionType) return;
 
   sessionManager.registerSession(sessionId, {
-    connectionId: existing.connectionId,
-    connectionType: existing.connectionType,
-    startedAt: existing.startedAt,
+    connectionId,
+    connectionType,
+    startedAt,
     clientConnection,
   });
 
-  logBuffer.addLog(
+  internalLogService.addLog(
     'INFO',
-    `Sesión iniciada (sessionId=${sessionId}, connectionId=${existing.connectionId}, type=${existing.connectionType})`,
+    `Sesión iniciada (sessionId=${sessionId}, connectionId=${connectionId}, type=${connectionType})`,
+    sessionId,
   );
   agentEmitter.emit('session:started', {
     sessionId,
-    connectionId: existing.connectionId,
-    connectionType: existing.connectionType,
+    connectionId,
+    connectionType,
   });
 });
 
@@ -64,14 +80,14 @@ guacServer.on('close', (clientConnection) => {
   const closed = sessionManager.closeSession(sessionId);
   if (!closed) return;
 
-  logBuffer.addLog('INFO', `Sesión cerrada (sessionId=${sessionId})`);
+  internalLogService.addLog('INFO', `Sesión cerrada (sessionId=${sessionId})`, sessionId);
   agentEmitter.emit('session:ended', { sessionId });
   console.info(`Sesión cerrada: ${sessionId}`);
 });
 
 guacServer.on('error', (error) => {
   const message = `Error de conexión con guacd: ${error?.message || 'desconocido'}`;
-  logBuffer.addLog('ERROR', message);
+  internalLogService.addLog('ERROR', message);
   agentEmitter.emit('agent:error', { message });
   console.error(message);
 });

@@ -1,6 +1,6 @@
 const net = require('net');
 const config = require('../config');
-const logBuffer = require('../services/logBuffer');
+const internalLogService = require('../services/internalLog.service');
 const agentEmitter = require('../services/eventEmitter');
 
 let lastGuacdStatus = null;
@@ -28,20 +28,21 @@ function probeGuacd(host, port, timeoutMs = 1000) { // Intenta conectar a guacd 
 function getLogs(req, res) {
   const { level, limit, search } = req.query;
   const levels = (Array.isArray(level) ? level : [level]) // Convierte level en array si no lo es
+    .filter((value) => value != null)
     .flatMap((value) => String(value).split(','))
     .map((value) => value.trim())
     .filter(Boolean);
 
   const searchValue = String(search || '').trim().toLowerCase();// Si se proporciona search, filtra los logs para incluir solo aquellos cuyo mensaje contenga el valor de búsqueda 
-  const logs = logBuffer
-    .getLogs(limit, levels)
+  const logs = internalLogService
+    .getLogs({ level: levels, limit })
     .filter((entry) => !searchValue || String(entry.message).toLowerCase().includes(searchValue));
 
   res.json({ logs });
 }
 
 function deleteLogs(_req, res) {
-  logBuffer.clear();
+  internalLogService.clearLogs();
   res.json({ ok: true });
 }
 
@@ -51,10 +52,10 @@ async function getStatus(_req, res) {
   if (lastGuacdStatus !== guacdOk) {
     if (guacdOk) {
       const message = 'Conexión con guacd restablecida';
-      logBuffer.addLog('INFO', message);
+      internalLogService.addLog('INFO', message);
     } else {
       const message = 'Error de conexión con guacd';
-      logBuffer.addLog('ERROR', message);
+      internalLogService.addLog('ERROR', message);
       agentEmitter.emit('agent:error', { message });
     }
     lastGuacdStatus = guacdOk;
