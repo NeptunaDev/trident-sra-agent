@@ -1,4 +1,19 @@
 services:
+  nginx:
+    image: nginx:alpine
+    container_name: trident-nginx
+    ports:
+      - "4040:4040"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      # Certificados Let's Encrypt (requerido para SSL). Descomenta cuando los tengas:
+      # - /etc/letsencrypt:/etc/letsencrypt:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Permite alcanzar API (3417) y WS (8080) en el host
+    networks:
+      - guacamole-network
+    restart: unless-stopped
+
   guacd:
     image: guacamole/guacd:latest
     platform: linux/amd64  # Imagen solo amd64; en ARM (Mac M1/M2, etc.) corre por emulación

@@ -7,3 +7,6 @@ src/frontend/vendor/
 .env
 .env.*
 !.env.example
+
+# Certificados autofirmados para nginx (desarrollo)
+nginx/ssl/

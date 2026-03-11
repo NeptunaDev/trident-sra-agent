@@ -10,7 +10,7 @@ const path = require('path');
 const config = require('../config');
 const csvService = require('../services/csv.service');
 const sessionManager = require('../services/sessionManager');
-const logBuffer = require('../services/logBuffer');
+const internalLogService = require('../services/internalLog.service');
 const agentEmitter = require('../services/eventEmitter');
 const tokenService = require('../services/token.service');
 
@@ -24,7 +24,7 @@ function getToken(req, res) {
   try {
     if (sessionManager.isAtLimit()) {
       const warningMessage = `Límite alcanzado (${sessionManager.count()}/${config.MAX_CONCURRENT_SESSIONS}) al solicitar token`;
-      logBuffer.addLog('WARN', warningMessage);
+      internalLogService.addLog('WARN', warningMessage);
       agentEmitter.emit('agent:warning', { message: warningMessage });
 
       return res.status(429).json({
@@ -60,15 +60,11 @@ function getToken(req, res) {
     connectionConfig.query = {
       ...(connectionConfig.query || {}),
       sessionId,
-    };
-
-    sessionManager.registerSession(sessionId, {
       connectionId: connectionName,
       connectionType,
-      startedAt: new Date(),
-    });
+    };
 
-    logBuffer.addLog('INFO', `Token generado para ${connectionName} (sessionId=${sessionId})`);
+    internalLogService.addLog('INFO', `Token generado para ${connectionName} (sessionId=${sessionId})`, sessionId);
 
     csvService.appendSessionToCsv(connectionName, sessionId, videoPath, typescriptPath);
 
@@ -76,7 +72,7 @@ function getToken(req, res) {
     return res.json({ token });
   } catch (error) {
     const message = `Error en generación de token: ${error.message}`;
-    logBuffer.addLog('ERROR', message);
+    internalLogService.addLog('ERROR', message);
     agentEmitter.emit('agent:error', { message });
     return res.status(500).json({ error: 'No se pudo generar el token' });
   }
