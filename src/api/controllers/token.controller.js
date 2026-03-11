@@ -78,6 +78,34 @@ function getToken(req, res) {
   }
 }
 
+/**
+ * POST /crypt
+ * Cifra Usuario y contraseña con AES-256-GCM.
+ * username es opcional y password es obligatorio.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+function postCrypt(req, res) {
+  try {
+    const { username, password } = req.body;
+    const response = {
+      password: tokenService.encryptTokenGCM(password),// Siempre se cifra password, username solo si se proporciona y no está vacío  
+    };
+
+    if (typeof username === 'string' && username.trim()) {
+      response.username = tokenService.encryptTokenGCM(username);// Solo se cifra username si es una cadena no vacía
+    }
+
+    return res.json(response);
+  } catch (error) {
+    const message = `Error en cifrado de credenciales: ${error.message}`;
+    internalLogService.addLog('ERROR', message);
+    agentEmitter.emit('agent:error', { message });
+    return res.status(500).json({ error: 'No se pudieron cifrar las credenciales' });
+  }
+}
+
 module.exports = {
   getToken,
+  postCrypt,
 };
