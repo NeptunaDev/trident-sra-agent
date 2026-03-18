@@ -6,11 +6,11 @@
 
 const express = require('express');
 const tokenController = require('../../controllers/token.controller');
-const { getTokenSchema } = require('../../schemas/token.schema');
+const { getTokenSchema, postConnectionToken } = require('../../schemas/token.schema')
 const { validateRequest } = require('../../middleware/validateRequest');
 
 const router = express.Router();
 
 router.get('/token', getTokenSchema, validateRequest, tokenController.getToken);
-
+router.post('/token', postConnectionToken, validateRequest, tokenController.postConnectionToken);
 module.exports = router;

@@ -29,6 +29,33 @@ function encryptToken(value) {
   return Buffer.from(JSON.stringify(data)).toString('base64');
 }
 
+/**
+ * Cifra un objeto como token usando AES-256-GCM para mayor seguridad.
+ * Formato unificado con FastAPI: base64(iv + ciphertext+authTag).
+ * Donde ciphertext+authTag es la salida nativa de AES-GCM.
+ * @param {object} value - Objeto a cifrar (configuración de conexión).
+ * @return {string} Token en base64.
+ */
+function encryptTokenGCM(value) {
+  const key = Buffer.from(config.CRYPT_KEY, 'hex');
+
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const plainText = typeof value === 'string' ? value : JSON.stringify(value);
+
+  const encryptedPayload = Buffer.concat([
+    cipher.update(plainText, 'utf8'),
+    cipher.final(),
+  ]);
+
+  const authTag = cipher.getAuthTag();
+  const packed = Buffer.concat([iv, encryptedPayload, authTag]);
+
+  return packed.toString('base64');
+}
+
+
 module.exports = {
   encryptToken,
+  encryptTokenGCM
 };

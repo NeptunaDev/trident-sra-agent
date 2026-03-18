@@ -14,6 +14,7 @@ const internalLogService = require('../services/internalLog.service');
 const agentEmitter = require('../services/eventEmitter');
 const tokenService = require('../services/token.service');
 
+
 /**
  * GET /token?connection=<name>
  * Responde con { token } para la conexión indicada. Validación de query en schema.
@@ -78,6 +79,110 @@ function getToken(req, res) {
   }
 }
 
+function postConnectionToken(req, res) {
+  try {
+    if (sessionManager.isAtLimit()) {
+      const warningMessage = `Límite alcanzado (${sessionManager.count()}/${config.MAX_CONCURRENT_SESSIONS}) al solicitar token`;
+      internalLogService.addLog('WARN', warningMessage);
+      agentEmitter.emit('agent:warning', { message: warningMessage });
+
+      return res.status(429).json({
+        error: 'Límite de sesiones activas alcanzado',
+        limit: config.MAX_CONCURRENT_SESSIONS,
+        current: sessionManager.count(),
+      });
+    }
+
+    const { type, hostname, port, username, password } = req.body;
+    const sessionId = crypto.randomUUID();
+    const connectionType = String(type || '').trim().toLowerCase();
+    const connectionId = `${connectionType}:${hostname}:${port}`;
+
+    let videoPath = null;
+    let typescriptPath = null;
+
+    const connectionConfig = {
+      connection: {
+        type: connectionType,
+        settings: {
+          hostname,
+          port,
+          ...(username ? { username } : {}),
+          ...(password ? { password } : {}),
+        }
+      }
+    };
+
+    if (['rdp', 'vnc'].includes(connectionType)) {
+      connectionConfig.connection.settings['recording-path'] = config.RECORDINGS_PATH;
+      connectionConfig.connection.settings['recording-name'] = `${sessionId}.guac`;
+      connectionConfig.connection.settings['create-recording-path'] = 'true';
+      videoPath = path.join(config.RECORDING_PATH_HOST, `${sessionId}.guac`);
+    }
+
+    if (connectionType === 'ssh') {
+      connectionConfig.connection.settings['typescript-path'] = config.TYPESCRIPT_PATH;
+      connectionConfig.connection.settings['typescript-name'] = `${sessionId}.typescript`;
+      connectionConfig.connection.settings['create-typescript-path'] = 'true';
+      typescriptPath = path.join(config.TYPESCRIPT_PATH_HOST, `${sessionId}.typescript`);
+    }
+
+    connectionConfig.query = {
+      ...(connectionConfig.query || {}),
+      sessionId,
+      connectionId,
+      connectionType,
+    };
+
+    internalLogService.addLog(
+      'INFO',
+      `Token personalizado generado para ${connectionId} (sessionId=${sessionId})`,
+      sessionId,
+    );
+
+    csvService.appendSessionToCsv(connectionId, sessionId, videoPath, typescriptPath);
+
+    const token = tokenService.encryptToken(connectionConfig);
+    return res.json({ token });
+  } catch (error) {
+    const message = `Error en generación de token de conexión personalizada: ${error.message}`;
+    internalLogService.addLog('ERROR', message);
+    agentEmitter.emit('agent:error', { message });
+    return res.status(500).json({ error: 'No se pudo generar el token de conexión personalizada' });
+  }
+}
+
+
+
+/**
+ * POST /crypt
+ * Cifra Usuario y contraseña con AES-256-GCM.
+ * username es opcional y password es obligatorio.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+function postCrypt(req, res) {
+  try {
+    const { username, password } = req.body;
+    const response = {
+      password: tokenService.encryptTokenGCM(password),// Siempre se cifra password, username solo si se proporciona y no está vacío  
+    };
+
+    if (typeof username === 'string' && username.trim()) {
+      response.username = tokenService.encryptTokenGCM(username);// Solo se cifra username si es una cadena no vacía
+    }
+
+    return res.json(response);
+  } catch (error) {
+    const message = `Error en cifrado de credenciales: ${error.message}`;
+    internalLogService.addLog('ERROR', message);
+    agentEmitter.emit('agent:error', { message });
+    return res.status(500).json({ error: 'No se pudieron cifrar las credenciales' });
+  }
+}
+
 module.exports = {
   getToken,
+  postConnectionToken,
+  postCrypt,
 };
