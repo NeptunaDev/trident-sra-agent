@@ -214,11 +214,20 @@ Base URL: `http://localhost:3417` (puerto fijo en `src/api/index.js`). Prefijo: 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | GET | `/api/v1/guacamole/token?connection=<id>` | Devuelve `{ token }` para la conexión (id = clave en `config.connections`). |
+| POST | `/api/v1/guacamole/token` | Devuelve `{ token }` para una conexión “personalizada” usando `type/hostname/port` (y `username/password` según protocolo). |
 | GET | `/api/v1/sessions?page=&limit=` | Listado paginado de sesiones. Respuesta: `{ sessions, pagination }`. |
-| DELETE | `/api/v1/sessions/:sessionId` | Borra una sesión (y sus archivos asociados si aplica). Respuesta: `{ ok }`. |
+| GET | `/api/v1/sessions/active` | Listado de sesiones activas en tiempo real. Respuesta: `{ active, count, limit }`. |
+| DELETE | `/api/v1/sessions` | Borra todas las sesiones (alias de clean). Respuesta: `{ ok }` y detalles. |
+| DELETE | `/api/v1/sessions/active/:sessionId` | Cierre forzado de una sesión activa. Respuesta: `{ ok, sessionId, socketClosed }`. |
+| DELETE | `/api/v1/sessions/:sessionId` | Borra una sesión (y sus archivos asociados si aplica). Respuesta: `{ ok }` y detalles. |
 | POST | `/api/v1/sessions/clean-recordings` | Borra todas las sesiones y sus grabaciones/typescripts. Respuesta: `{ ok }`. |
 | GET | `/api/v1/view/log?sessionId=` | Sirve el typescript en texto plano (para “Ver texto”). |
 | GET | `/api/v1/view/video?sessionId=` | Sirve el archivo .guac (para el reproductor o StaticHTTPTunnel). |
+| GET | `/api/v1/internal/logs?level=&limit=&search=` | Logs internos (filtro por `level`, `limit` y búsqueda por texto). Respuesta: `{ logs }`. |
+| DELETE | `/api/v1/internal/logs` | Limpia los logs internos. Respuesta: `{ ok: true }`. |
+| GET | `/api/v1/internal/status` | Estado de la API/WS y salud de `guacd`. Respuesta: `{ apiPort, wsPort, apiOk, wsOk, guacdOk }`. |
+| POST | `/api/v1/crypt` | Cifra credenciales para usarlas en túneles. Body: `{ password, username? }`. Respuesta: `{ password, username? }` (ambos cifrados). |
+| GET | `/api/v1/health` | Alias de estado (misma respuesta que `/internal/status`). Respuesta: `{ apiPort, wsPort, apiOk, wsOk, guacdOk }`. |
 
 Las sesiones se obtienen desde el backend (p. ej. CSV o BD); cada sesión tiene al menos: `connectionName`, `sessionId`, `createdAt`, y opcionalmente `videoPath`, `typescriptPath`.
 
