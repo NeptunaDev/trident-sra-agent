@@ -37,7 +37,10 @@ function encryptToken(value) {
  * @return {string} Token en base64.
  */
 function encryptTokenGCM(value) {
-  const key = Buffer.from(config.CRYPT_KEY, 'hex');
+  const key = Buffer.from(config.CRYPT_KEY, 'utf8');
+  if (key.length !== 32) {
+    throw new Error('CRYPT_KEY debe tener exactamente 32 bytes UTF-8 para AES-256-GCM');
+  }
 
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
