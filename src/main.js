@@ -1,3 +1,5 @@
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+
 /**
  * Proceso principal de Electron (Trident Agent).
  *

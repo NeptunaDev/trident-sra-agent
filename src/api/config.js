@@ -12,18 +12,18 @@ const path = require('path');
 const ROOT_PATH = path.join(__dirname, '..', '..');
 
 module.exports = {
-  AGENT_ID: process.env.AGENT_ID || '509b0584-9bfe-49dc-a61f-55370903846a',
+  AGENT_ID: process.env.AGENT_ID || '',
   PY_API_BASE_URL: process.env.PY_API_BASE_URL || 'http://127.0.0.1:8000',
-  PY_API_TIMEOUT_MS: parseInt(process.env.PY_API_TIMEOUT_MS || '10000', 10),
-  MAX_CONCURRENT_SESSIONS: parseInt(process.env.MAX_SESSIONS || '5', 10),
+  PY_API_TIMEOUT_MS: parseInt(process.env.PY_API_TIMEOUT_MS || '10000'),
+  MAX_CONCURRENT_SESSIONS: parseInt(process.env.MAX_SESSIONS || '5'),
   /** Clave usada por guacamole-lite para cifrar el token de conexión (AES-256-CBC). Debe coincidir con la de guacd. */
-  CRYPT_KEY: 'MySuperSecretKeyForParams1234567',
+  CRYPT_KEY: process.env.CRYPT_KEY || '',
   /** Host donde corre guacd (daemon de Guacamole). */
-  GUACD_HOST: '127.0.0.1',
+  GUACD_HOST: process.env.GUACD_HOST || '127.0.0.1',
   /** Puerto de guacd. */
-  GUACD_PORT: 4822,
+  GUACD_PORT: parseInt(process.env.GUACD_PORT || '4822'),
   /** Puerto del servidor WebSocket que usa el frontend para conectar con Guacamole. */
-  WEBSOCKET_PORT: 8080,
+  WEBSOCKET_PORT: parseInt(process.env.WEBSOCKET_PORT || '8080'),
   /** Algoritmo de cifrado del token. */
   CIPHER: 'AES-256-CBC',
   /** Ruta donde guacd escribe las grabaciones .guac (dentro del contenedor/servidor donde corre guacd). */
