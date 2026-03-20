@@ -19,6 +19,7 @@ const internalRoutes = require('./internal/index');
 const internalController = require('../controllers/internal.controller');
 const tokenController = require('../controllers/token.controller');
 const { postCryptSchema } = require('../schemas/token.schema');
+const { validateRequest } = require('../middleware/validateRequest');
 
 const router = express.Router();
 
@@ -26,7 +27,7 @@ router.use('/api/v1/sessions', sessionsRoutes);
 router.use('/api/v1/guacamole', guacamoleRoutes);
 router.use('/api/v1/view', viewRoutes);
 router.use('/api/v1/internal', internalRoutes);
-router.post('/api/v1/crypt', postCryptSchema, tokenController.postCrypt);
+router.post('/api/v1/crypt', postCryptSchema, validateRequest, tokenController.postCrypt);
 router.get('/api/v1/health', internalController.getStatus);
 
 module.exports = router;

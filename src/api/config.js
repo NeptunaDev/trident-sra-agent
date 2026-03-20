@@ -13,6 +13,8 @@ const ROOT_PATH = path.join(__dirname, '..', '..');
 
 module.exports = {
 
+  PY_API_BASE_URL: process.env.PY_API_BASE_URL || 'http://localhost:8000',
+  PY_API_TIMEOUT_MS: parseInt(process.env.PY_API_TIMEOUT_MS || '10000', 10),
   MAX_CONCURRENT_SESSIONS: parseInt(process.env.MAX_SESSIONS || '5', 10),
   /** Clave usada por guacamole-lite para cifrar el token de conexión (AES-256-CBC). Debe coincidir con la de guacd. */
   CRYPT_KEY: 'MySuperSecretKeyForParams1234567',
