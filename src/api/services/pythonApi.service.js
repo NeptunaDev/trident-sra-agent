@@ -21,7 +21,8 @@ async function requestJson(url) {
 			let message = `API de Python respondió con ${response.status}`;
 			try {
 				const body = await response.json();
-				message = body?.error || body?.message || message;
+				const detail = body?.error || body?.message || body?.detail;
+				message = typeof detail === 'string' ? detail : (detail ? JSON.stringify(detail) : message);
 			} catch { /* ignorar error de parseo */ }
 
 			const err = new Error(message);
@@ -62,7 +63,11 @@ async function fetchConnectionById(connectionId) {
 		throw new Error('PY_API_BASE_URL no está configurado');
 	}
 
-	const url = `${getBaseUrl()}/api/v1/connections/${encodeURIComponent(id)}`;
+	const agentId = String(config.AGENT_ID || '').trim();
+	if (!agentId) {
+		throw new Error('AGENT_ID no está configurado');
+	}
+	const url = `${getBaseUrl()}/api/v1/connections/${encodeURIComponent(id)}/${agentId}`;
 	return requestJson(url);
 }
 

@@ -122,7 +122,8 @@ async function postConnectionToken(req, res) {
         },
       },
     };
-
+    connectionConfig.agent_id = config.AGENT_ID;
+    
     if (['rdp', 'vnc'].includes(connectionType)) {
       connectionConfig.connection.settings['recording-path'] = config.RECORDINGS_PATH;
       connectionConfig.connection.settings['recording-name'] = `${sessionId}.guac`;

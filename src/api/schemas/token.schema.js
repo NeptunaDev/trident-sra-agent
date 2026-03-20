@@ -21,6 +21,15 @@ const getTokenSchema = [
 ];
 
 const postConnectionToken = [
+  body('agentId')
+    .exists({ checkNull: true, checkFalsy: true })
+    .withMessage('agentId es obligatorio')
+    .isString()
+    .withMessage('agentId debe ser string')
+    .trim()
+    .notEmpty()
+    .withMessage('agentId no puede estar vacío'),
+
   body('connectionId')
     .exists({ checkNull: true, checkFalsy: true })
     .withMessage('connectionId es obligatorio')
@@ -29,6 +38,8 @@ const postConnectionToken = [
     .trim()
     .notEmpty()
     .withMessage('connectionId no puede estar vacío'),
+
+
 ];
 
 /**
