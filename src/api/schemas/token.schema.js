@@ -21,53 +21,25 @@ const getTokenSchema = [
 ];
 
 const postConnectionToken = [
-  body('type')
+  body('agentId')
     .exists({ checkNull: true, checkFalsy: true })
-    .withMessage('type es obligatorio')
-    .trim()
-    .toLowerCase()
-    .isIn(connectionTypes)
-    .withMessage(`type debe ser uno de: ${connectionTypes.join(', ')}`),
-
-  body('hostname')
+    .withMessage('agentId es obligatorio')
+    .isString()
+    .withMessage('agentId debe ser string')
     .trim()
     .notEmpty()
-    .withMessage('hostname no puede estar vacío')
-    .isString(),
+    .withMessage('agentId no puede estar vacío'),
 
-  body('port')
-    .isInt({ min: 1, max: 65535 })
-    .withMessage('port debe ser un número entre 1 y 65535'),
-
-  // Username Opcional inicialmente,se valida después según el tipo de conexión
-  body('username')
-    .optional()
+  body('connectionId')
+    .exists({ checkNull: true, checkFalsy: true })
+    .withMessage('connectionId es obligatorio')
+    .isString()
+    .withMessage('connectionId debe ser string')
     .trim()
-    .isString(),
+    .notEmpty()
+    .withMessage('connectionId no puede estar vacío'),
 
-  // Password Sin trim por seguridad
-  body('password')
-    .optional()
-    .isString(),
 
-  // Validación para username y password según el tipo de conexión
-  body().custom((value, { req }) => {
-    const type = String(req.body?.type || '').toLowerCase();
-    const username = req.body?.username;
-    const password = req.body?.password;
-
-    // 1. Username obligatorio para todo menos VNC
-    if (type !== 'vnc' && !username) {
-      throw new Error('username es obligatorio para protocolos que no sean VNC');
-    }
-
-    // 2. Password obligatorio para SSH y RDP
-    if ((type === 'ssh' || type === 'rdp') && !password) {
-      throw new Error(`password es obligatorio para el protocolo ${type.toUpperCase()}`);
-    }
-
-    return true;
-  }),
 ];
 
 /**

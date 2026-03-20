@@ -13,6 +13,7 @@ const sessionManager = require('../services/sessionManager');
 const internalLogService = require('../services/internalLog.service');
 const agentEmitter = require('../services/eventEmitter');
 const tokenService = require('../services/token.service');
+const pythonApi = require('../services/pythonApi.service');
 
 
 /**
@@ -79,7 +80,8 @@ function getToken(req, res) {
   }
 }
 
-function postConnectionToken(req, res) {
+async function postConnectionToken(req, res) {
+  console.log('POST /crypt recibido con body:', req.body); // Log del body recibido
   try {
     if (sessionManager.isAtLimit()) {
       const warningMessage = `Límite alcanzado (${sessionManager.count()}/${config.MAX_CONCURRENT_SESSIONS}) al solicitar token`;
@@ -93,10 +95,18 @@ function postConnectionToken(req, res) {
       });
     }
 
-    const { type, hostname, port, username, password } = req.body;
+    const { connectionId } = req.body;
+    console.log('connectionId recibido:', connectionId); // Log del connectionId recibido
+    const connection = await pythonApi.fetchConnectionById(connectionId);
+    console.log('Conexión obtenida de API de Python:', connection); // Log de la conexión obtenida
+    const connectionType = String(connection.type || '').trim().toLowerCase();
+    const hostname = String(connection.hostname || '').trim();
+    const port = connection.port;
+    const username = connection.username ? tokenService.decryptTokenGCM(connection.username) : null;
+    const password = connection.password ? tokenService.decryptTokenGCM(connection.password) : null;
+
     const sessionId = crypto.randomUUID();
-    const connectionType = String(type || '').trim().toLowerCase();
-    const connectionId = `${connectionType}:${hostname}:${port}`;
+    const connLabel = `${connectionType}:${hostname}:${port}`;
 
     let videoPath = null;
     let typescriptPath = null;
@@ -109,10 +119,11 @@ function postConnectionToken(req, res) {
           port,
           ...(username ? { username } : {}),
           ...(password ? { password } : {}),
-        }
-      }
+        },
+      },
     };
-
+    connectionConfig.agent_id = config.AGENT_ID;
+    
     if (['rdp', 'vnc'].includes(connectionType)) {
       connectionConfig.connection.settings['recording-path'] = config.RECORDINGS_PATH;
       connectionConfig.connection.settings['recording-name'] = `${sessionId}.guac`;
@@ -130,25 +141,29 @@ function postConnectionToken(req, res) {
     connectionConfig.query = {
       ...(connectionConfig.query || {}),
       sessionId,
-      connectionId,
+      connectionId: connLabel,
       connectionType,
     };
 
     internalLogService.addLog(
       'INFO',
-      `Token personalizado generado para ${connectionId} (sessionId=${sessionId})`,
+      `Token personalizado generado para ${connLabel} (sessionId=${sessionId})`,
       sessionId,
     );
 
-    csvService.appendSessionToCsv(connectionId, sessionId, videoPath, typescriptPath);
+    csvService.appendSessionToCsv(connLabel, sessionId, videoPath, typescriptPath);
 
     const token = tokenService.encryptToken(connectionConfig);
     return res.json({ token });
   } catch (error) {
-    const message = `Error en generación de token de conexión personalizada: ${error.message}`;
+    if (typeof error?.status === 'number') {
+      internalLogService.addLog('ERROR', `Error en token dinámico: ${error.message}`);
+      return res.status(error.status).json({ error: error.message });
+    }
+    const message = `Error en token dinámico: ${error.message}`;
     internalLogService.addLog('ERROR', message);
     agentEmitter.emit('agent:error', { message });
-    return res.status(500).json({ error: 'No se pudo generar el token de conexión personalizada' });
+    return res.status(500).json({ error: 'No se pudo generar el token de conexión' });
   }
 }
 
